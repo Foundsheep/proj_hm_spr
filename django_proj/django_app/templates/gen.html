@@ -1,7 +1,16 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block head_message %}Generation{% endblock %}
 
 {% block content %}
-<div class="align-items-center text-center">
-  <p class="">gen</p>
+<div>
+  <label for="upper_type">Upper plate</label>
+  <select name="upper_type" id="upper_type" required>
+    <option value="" disabled selected hidden>선택</option>
+    {% for ut in upper_type %}
+    <option value="{{ ut }}"">{{ ut }}</option>
+    {% endfor %}
+  </select>
 </div>
 {% endblock %}
