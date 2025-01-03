@@ -4,13 +4,79 @@
 {% block head_message %}Generation{% endblock %}
 
 {% block content %}
-<div>
+<div class="">
+  <div>Plate count</div>
+  <input type="radio" id="two" name="plate_count" value="2" checked>
+  <label for="two">2</label>
+  <input type="radio" id="three" name="plate_count" value="3">
+  <label for="three">3</label>
+
+  <label for="rivet">Rivet</label>
+  <select name="rivet" id="rivet" required>
+    <option value="" disabled selected hidden>선택</option>
+    {% for t in rivet %}
+    <option value="{{ t }}"">{{ t }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="die">Die</label>
+  <select name="die" id="die" required>
+    <option value="" disabled selected hidden>선택</option>
+    {% for t in die %}
+    <option value="{{ t }}"">{{ t }}</option>
+    {% endfor %}
+  </select>
+  
   <label for="upper_type">Upper plate</label>
   <select name="upper_type" id="upper_type" required>
     <option value="" disabled selected hidden>선택</option>
-    {% for ut in upper_type %}
-    <option value="{{ ut }}"">{{ ut }}</option>
+    {% for t in upper_type %}
+    <option value="{{ t }}"">{{ t }}</option>
     {% endfor %}
   </select>
+  
+  <label for="middle_type" id="middle_type_label">Middle plate</label>
+  <select name="middle_type" id="middle_type" required>
+    <option value="" disabled selected hidden>선택</option>
+    {% for t in middle_type %}
+    <option value="{{ t }}"">{{ t }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="lower_type">Lower plate</label>
+  <select name="lower_type" id="lower_type" required>
+    <option value="" disabled selected hidden>선택</option>
+    {% for t in lower_type %}
+    <option value="{{ t }}"">{{ t }}</option>
+    {% endfor %}
+  </select>
+
 </div>
+
+{% block extra_scripts %}
+<script>
+  // Function to toggle visibility of middle_type label
+  function toggleMiddleTypeVisibility() {
+    var plateCount = document.querySelector('input[name="plate_count"]:checked').value;
+    var middleTypeLabel = document.getElementById('middle_type_label');
+    var middleType = document.getElementById('middle_type');
+    
+    // Hide the middle_type label if plate count is 2, show it otherwise
+    if (plateCount === '2') {
+      middleTypeLabel.style.display = 'none';
+      middleType.style.display = "none";
+    } else {
+      middleTypeLabel.style.display = 'inline';
+      middleType.style.display = 'inline';
+    }
+  }
+
+  // Run the toggle function when the page loads and when plate count changes
+  window.addEventListener('DOMContentLoaded', toggleMiddleTypeVisibility);
+  document.querySelectorAll('input[name="plate_count"]').forEach(function(radio) {
+    radio.addEventListener('change', toggleMiddleTypeVisibility);
+  });
+</script>
+{% endblock %}
+
 {% endblock %}

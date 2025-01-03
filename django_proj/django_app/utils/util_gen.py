@@ -12,8 +12,21 @@ class GenOptionProducer:
         self.lower_type = "lower_type"
         self.lower_thickness = "lower_thickness"
         
+    def get_condition_options_rivet(self):
+        return self._give_unique_list_by_key(self.rivet)
+        
+    def get_condition_options_die(self):
+        return self._give_unique_list_by_key(self.die)
+
     def get_condition_options_upper_type(self):
         return self._give_unique_list_by_key(self.upper_type)
+        
+    def get_condition_options_middle_type(self):
+        return self._give_unique_list_by_key(self.middle_type)
+
+    def get_condition_options_lower_type(self):
+        return self._give_unique_list_by_key(self.lower_type)
+        
         
     def get_dummy_df(self, path):
         return pd.read_csv(path)
