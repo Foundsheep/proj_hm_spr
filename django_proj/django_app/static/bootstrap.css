@@ -12174,3 +12174,77 @@ legend {
 .border-dashed.dragover {
   background-color: rgba(0,0,0,0.1);
 }
+
+.narrow-fieldset {
+  max-width: 300px;
+  min-height: 250px;
+  margin: 0 auto;
+  padding: 16px;
+  border: 1px solid #eee;
+  /* border-radius: 8px; */
+  margin-bottom: 20px;
+}
+
+.horizontal-group {
+  display: flex;
+  max-width: 80%;
+  min-height: 300px;
+  flex-wrap: warp;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+.horizontal-group .narrow-fieldset {
+  flex: 1;
+  min-width: 200px;
+}
+
+.center-content {
+  display: flex;
+  justify-content: center; /* Centers horizontally */
+  align-items: center; /* Centers vertically */
+  min-height: 100vh; /* Ensures it takes full viewport height */
+}
+
+.form-container {
+  /* display: flex;
+  flex-direction: column; */
+  /* align-items: center; */
+  /* align-items: flex-start; Align form elements to the left */
+  /* padding: 16px; */
+  border: 2px solid #ccc;
+  border-radius: 8px;
+}
+
+.column-container {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.result-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #f8f9fa;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  min-height: 400px; /* Adjust as necessary */
+  padding: 20px;
+}
+
+.image-preview {
+  width: 100%;
+  height: 300px;
+  background-color: white;
+  border: 1px dashed #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  color: #777;
+}

@@ -6,5 +6,6 @@ urlpatterns = [
     path("", views.index, name="index"),
     path("seg/", views.seg, name="seg"),
     path("gen/", views.gen, name="gen"),
-    path("api/process-segmentation/", views.api_process_segmentation, name="process_segmentation")
+    path("api/process-segmentation/", views.api_process_segmentation, name="process_segmentation"),
+    path("api/process-generation/", views.api_process_generation, name="process_generation")
 ]

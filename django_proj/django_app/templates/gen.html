@@ -1,82 +1,119 @@
 {% extends "base.html" %}
 {% load static %}
+{% load django_bootstrap5 %}
 
 {% block head_message %}Generation{% endblock %}
 
 {% block content %}
-<div class="">
-  <div>Plate count</div>
-  <input type="radio" id="two" name="plate_count" value="2" checked>
-  <label for="two">2</label>
-  <input type="radio" id="three" name="plate_count" value="3">
-  <label for="three">3</label>
+<div class="container">
+  <div class="row gap-4 h-75 d-flex justify-content-center">
+    <div class="col-md-3">
+      <div class="border rounded p-2 mb-4">
+        <form action="/api/process-generation/" method="post" class="d-flex flex-column">
+          {% csrf_token %}
+          {{ form }}
+          <button type="submit" class="btn btn-primary mt-4">생성하기</button>
+        </form>
 
-  <label for="rivet">Rivet</label>
-  <select name="rivet" id="rivet" required>
-    <option value="" disabled selected hidden>선택</option>
-    {% for t in rivet %}
-    <option value="{{ t }}"">{{ t }}</option>
-    {% endfor %}
-  </select>
 
-  <label for="die">Die</label>
-  <select name="die" id="die" required>
-    <option value="" disabled selected hidden>선택</option>
-    {% for t in die %}
-    <option value="{{ t }}"">{{ t }}</option>
-    {% endfor %}
-  </select>
-  
-  <label for="upper_type">Upper plate</label>
-  <select name="upper_type" id="upper_type" required>
-    <option value="" disabled selected hidden>선택</option>
-    {% for t in upper_type %}
-    <option value="{{ t }}"">{{ t }}</option>
-    {% endfor %}
-  </select>
-  
-  <label for="middle_type" id="middle_type_label">Middle plate</label>
-  <select name="middle_type" id="middle_type" required>
-    <option value="" disabled selected hidden>선택</option>
-    {% for t in middle_type %}
-    <option value="{{ t }}"">{{ t }}</option>
-    {% endfor %}
-  </select>
-
-  <label for="lower_type">Lower plate</label>
-  <select name="lower_type" id="lower_type" required>
-    <option value="" disabled selected hidden>선택</option>
-    {% for t in lower_type %}
-    <option value="{{ t }}"">{{ t }}</option>
-    {% endfor %}
-  </select>
-
-</div>
-
-{% block extra_scripts %}
-<script>
-  // Function to toggle visibility of middle_type label
-  function toggleMiddleTypeVisibility() {
-    var plateCount = document.querySelector('input[name="plate_count"]:checked').value;
-    var middleTypeLabel = document.getElementById('middle_type_label');
-    var middleType = document.getElementById('middle_type');
+        <!-- <form class="d-flex flex-column" action="/gen/" method="post">
+          <fieldset>
+            <label for="number_to_generate" class="form-label">number to generate
+              <input type="number" name="number_to_generate", step=1, id="number_to_generate_input", class="form-input w-75"/>
+            </label>
+          </fieldset>
+          <fieldset class="">
+            <p class="mb-0">Plate count</p>
+            <label for="two" class="form-label">2겹
+              <input type="radio" id="two" name="plate_count" value="2" checked class="form-input">
+            </label>
+            <label for="three" class="form-label">3겹
+              <input type="radio" id="three" name="plate_count" value="3" class="form-input">
+            </label>
+          </fieldset>
+        
+          <fieldset class="">
+            <label for="rivet" class="form-label">Rivet</label>
+            <select name="rivet" id="rivet" required class="form-select mb-4 w-75">
+              <option value="" disabled selected hidden>선택</option>
+              {% for t in rivet %}
+              <option value="{{ t }}">{{ t }}</option>
+              {% endfor %}
+            </select>
+            <label for="die" class="form-label">Die</label>
+            <select name="die" id="die" required class="form-select mb-4 w-75">
+              <option value="" disabled selected hidden>선택</option>
+              {% for t in die %}
+              <option value="{{ t }}">{{ t }}</option>
+              {% endfor %}
+            </select>
+          </fieldset>
+        
+          <fieldset class="">
+            <label for="head_height" class="form-label">
+              head_height
+              <input type="number" name="head_height" step=any class="form-input mb-4 w-75"/>
+            </label>
+          </fieldset>
     
-    // Hide the middle_type label if plate count is 2, show it otherwise
-    if (plateCount === '2') {
-      middleTypeLabel.style.display = 'none';
-      middleType.style.display = "none";
-    } else {
-      middleTypeLabel.style.display = 'inline';
-      middleType.style.display = 'inline';
-    }
-  }
-
-  // Run the toggle function when the page loads and when plate count changes
-  window.addEventListener('DOMContentLoaded', toggleMiddleTypeVisibility);
-  document.querySelectorAll('input[name="plate_count"]').forEach(function(radio) {
-    radio.addEventListener('change', toggleMiddleTypeVisibility);
-  });
-</script>
-{% endblock %}
-
+          <fieldset class="">
+            <label for="upper_type" class="form-label">Upper plate</label>
+            <select name="upper_type" id="upper_type" required class="form-select mb-4 w-75">
+              <option value="" disabled selected hidden>선택</option>
+              {% for t in upper_type %}
+              <option value="{{ t }}">{{ t }}</option>
+              {% endfor %}
+            </select>
+            <label for="upper_thickness", id="upper_thickness_label" class="form-label">
+              Upper plate thickness
+              <input type="number" name="upper_thickness" step=0.1 id="upper_thickness_input" class="form-input mb-4 w-75"/>
+            </label>
+          </fieldset>
+          
+          <fieldset id="middle_fieldset" class="">
+            <label for="middle_type" id="middle_type_label" class="form-label">Middle plate</label>
+            <select name="middle_type" id="middle_type" required class="form-select mb-4">
+              <option value="" disabled selected hidden>선택</option>
+              {% for t in middle_type %}
+              <option value="{{ t }}">{{ t }}</option>
+              {% endfor %}
+            </select>
+            <label for="middle_thickness" id="middle_thickness_label" class="form-label mb-4 w-75">
+              Middle plate thickness
+              <input type="number" name="middle_thickness" step=0.1 id="middle_thickness_input" class="form-input"/>
+            </label>
+          </fieldset>
+        
+          <fieldset class="">
+            <label for="lower_type" class="form-label">Lower plate</label>
+            <select name="lower_type" id="lower_type" required class="form-select mb-4 w-75">
+              <option value="" disabled selected hidden>선택</option>
+              {% for t in lower_type %}
+              <option value="{{ t }}">{{ t }}</option>
+              {% endfor %}
+            </select>
+            <label for="lower_thickness" id="lower_thickness_label" class="form-label">
+              Lower plate thickness
+              <input type="number" name="lower_thickness" step=0.1 id="lower_thickness_input" class="form-input mb-4 w-75"/>
+            </label>
+          </fieldset>
+        </form> -->
+      </div>
+    </div>    
+    <div class="col-md-8">
+      <div class="h-100 d-flex flex-column gap-4">
+        <div class="border rounded p-4 d-flex justify-content-center align-items-center h-75">
+          Image preview
+        </div>
+        <div class="border rounded p-4 d-flex flex-column justify-content-center align-items-center h-25">
+          <div class="">MS 기준</div>
+        </div>
+        <div class="d-flex justify-content-center">
+          <button class="btn btn-primary">생성된 이미지 저장하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="{% static 'displayMiddlePlate.js' %}"></script>
 {% endblock %}

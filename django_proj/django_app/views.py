@@ -1,21 +1,13 @@
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from .apps import DjangoAppConfig
+from .models import *
+import torch
 
 from PIL import Image
 import numpy as np
 import traceback
-
-from .utils import util_gen
-
-# TODO: PATH to be derived from env
-PATH = r"C:\Users\msi\Desktop\workspace\001_HM_SPR\00_src\proj_hm_spr\django_proj\django_app\utils\metadata.csv"
-op = util_gen.GenOptionProducer(PATH)
-OPTION_RIVET = op.get_condition_options_rivet()
-OPTION_DIE = op.get_condition_options_die()
-OPTION_UPPER_TYPE = op.get_condition_options_upper_type()
-OPTION_MIDDLE_TYPE = op.get_condition_options_middle_type()
-OPTION_LOWER_TYPE = op.get_condition_options_lower_type()
 
 def index(req):
     context = {}
@@ -31,8 +23,18 @@ def gen(req):
         "die": OPTION_DIE,
         "upper_type": OPTION_UPPER_TYPE,
         "middle_type": OPTION_MIDDLE_TYPE,
-        "lower_type": OPTION_LOWER_TYPE,        
+        "lower_type": OPTION_LOWER_TYPE,
     }
+    
+    if req.method == "POST":
+        form = GenCondtidionForm(req.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            print(data)
+    else:
+        form = GenCondtidionForm()
+        
+    context.update({"form": form})
     return render(req, "gen.html", context)
 
 @csrf_exempt
@@ -51,3 +53,45 @@ def api_process_segmentation(request):
             traceback.print_tb(e)
             return JsonResponse({"code": "failure"})    
     return JsonResponse({"code": "success"})
+
+
+def api_process_generation(req):
+    print(req)
+    if req.method == "POST":
+        # model = DjangoAppConfig.gen_model
+        # transforms = DjangoAppConfig.transforms
+        
+        # plate_count = transforms["plate_count"](3)
+        # rivet = transforms["rivet"]("AB5.5X5.5")
+        # die = transforms["die"]("D1020")
+        # upper_type = transforms["upper_type"]("SABC1470")
+        # upper_thickness = transforms["upper_thickness"](1.)
+        # middle_type = transforms["middle_type"]("SGAFC590")
+        # middle_thickness = transforms["middle_thickness"](0.7)
+        # lower_type = transforms["lower_type"]("A6N01")
+        # lower_thickness = transforms["lower_thickness"](3.)
+        # head_height = transforms["head_height"](0.230122)
+        
+        # categorical_conds = (
+        #     torch.stack([
+        #         rivet, die, upper_type, middle_type, lower_type
+        #     ]).to(device=DjangoAppConfig.DEVICE)
+        # )
+        
+        # continuous_conds = (
+        #     torch.stack([
+        #         plate_count, upper_thickness, middle_thickness, lower_thickness, head_height
+        #     ]).to(device=DjangoAppConfig.DEVICE)
+        # )
+        
+        # with torch.no_grad():
+        #     model.eval()
+        #     out = model(
+        #         batch_size=1,
+        #         categorical_conds=categorical_conds,
+        #         continuous_conds=continuous_conds
+        #     )
+        print("************* DONE *************")
+    
+    return JsonResponse({"result": "success"})
+        

@@ -11,25 +11,32 @@ class GenOptionProducer:
         self.middle_thickness = "middle_thickness"
         self.lower_type = "lower_type"
         self.lower_thickness = "lower_thickness"
+        self.is_javascript = False
+        self.method = self._give_unique_list_by_key if self.is_javascript else self._give_unique_tupled_list_by_key
         
     def get_condition_options_rivet(self):
-        return self._give_unique_list_by_key(self.rivet)
+        return self.method(self.rivet)
         
     def get_condition_options_die(self):
-        return self._give_unique_list_by_key(self.die)
+        return self.method(self.die)
 
     def get_condition_options_upper_type(self):
-        return self._give_unique_list_by_key(self.upper_type)
+        return self.method(self.upper_type)
         
     def get_condition_options_middle_type(self):
-        return self._give_unique_list_by_key(self.middle_type)
+        return self.method(self.middle_type)
 
     def get_condition_options_lower_type(self):
-        return self._give_unique_list_by_key(self.lower_type)
-        
+        return self.method(self.lower_type)
         
     def get_dummy_df(self, path):
         return pd.read_csv(path)
 
     def _give_unique_list_by_key(self, key):
         return self.df[key].dropna().unique().tolist()
+    
+    def _give_unique_dict_by_key(self, key):
+        return {c: c for c in self.df[key].dropna().unique()}
+    
+    def _give_unique_tupled_list_by_key(self, key):
+        return [(c, c) for c in self.df[key].dropna().unique()]
