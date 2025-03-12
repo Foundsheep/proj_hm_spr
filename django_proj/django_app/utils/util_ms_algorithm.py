@@ -23,6 +23,7 @@ COLOUR_NAMES = {
     "UPPER": UPPER,
     }
 RIVET_DIAMETER = 7.75
+HEAD_DIAMETER = 13.5
 
 
 def adjust_ratio_and_resize_image(path, to_h, to_w, save_folder_path=None):
@@ -311,6 +312,9 @@ def get_rotated_image_rivet_coords(img_arr):
     img = Image.fromarray(img_arr)
     img_rotated = img.rotate(deg)
     img_rotated_arr = np.array(img_rotated)
+    
+    # 리벳 직경 좌표 rotated된 이미지에서 구하기
+    left_x_rivet, left_y_rivet, right_x_rivet, right_y_rivet = get_line_coords_via_corners(img_rotated_arr, RIVET, True)
     return img_rotated_arr, (left_x_rivet, left_y_rivet, right_x_rivet, right_y_rivet)
 
 def get_thickness_of_plate(coords, img_arr, colour):
@@ -434,11 +438,11 @@ def get_colour_touching_coords_by_moving_on_x_axis(img_rotated_arr, x, y, colour
     if towards_left:
         while is_not_on_colour:
             x -= 1
-            is_not_on_colour = all(img_rotated_arr[y, x, :] != colour)
+            is_not_on_colour = any(img_rotated_arr[y, x, :] != colour)
     else:
         while is_not_on_colour:
             x += 1
-            is_not_on_colour = all(img_rotated_arr[y, x, :] != colour)
+            is_not_on_colour = any(img_rotated_arr[y, x, :] != colour)
     # print(f"...modified {x = } / {y = }")   
     return x, y    
 
@@ -457,7 +461,7 @@ def get_colour_touching_coords_by_moving_on_y_axis(img_rotated_arr, x, y, colour
     if is_hovering:
         while is_hovering:
             y += 1
-            is_hovering = all(img_rotated_arr[y, x, :] != colour)
+            is_hovering = any(img_rotated_arr[y, x, :] != colour)
     else:
         is_on_colour = not is_hovering
         while is_on_colour:
@@ -517,29 +521,33 @@ def get_head_height(img_rotated_arr,
                     ry_rivet, 
                     diameter_mm, 
                     weighted_mm_per_pixel,
-                    to_save_fig=False):    
+                    fig_save_folder=None):    
     
     # 리벳 중간점 구하기
     middle_x, middle_y = get_middle_coords(lx_rivet, ly_rivet, rx_rivet, ry_rivet)
-    # visualise(img_rotated_arr, [middle_x], [middle_y], fig_save_folder, True)
+    if fig_save_folder:
+        visualise(img_rotated_arr, [middle_x], [middle_y], fig_save_folder, True)
     
     # 리벳에서 양쪽으로 떨어진 두 점 구하기
     lx_further, rx_further = get_coords_from_centre_for_both_sides(diameter_mm, middle_x, weighted_mm_per_pixel)
-    # visualise(img_rotated_arr, [lx_further, rx_further], [middle_y, middle_y], fig_save_folder, True)
+    if fig_save_folder:
+        visualise(img_rotated_arr, [lx_further, rx_further], [middle_y, middle_y], fig_save_folder, True)
 
     # 리벳 양쪽 두 점이 upper와 만나는 점 구하기
     lx_further, ly_touching = get_colour_touching_coords_by_moving_on_y_axis(img_rotated_arr, lx_further, middle_y, UPPER)
     rx_further, ry_touching = get_colour_touching_coords_by_moving_on_y_axis(img_rotated_arr, rx_further, middle_y, UPPER)
-    
-    # visualise(img_rotated_arr, [lx_further, rx_further], [ly_touching, ry_touching], fig_save_folder, True)
+    if fig_save_folder:
+        visualise(img_rotated_arr, [lx_further, rx_further], [ly_touching, ry_touching], fig_save_folder, True)
     
     # upper 위 두 점의 중간점 구하기
     upper_middle_x_on_line, upper_middle_y_on_line = get_middle_coords(lx_further, ly_touching, rx_further, ry_touching)
-    # visualise(img_rotated_arr, [upper_middle_x_on_line], [upper_middle_y_on_line], fig_save_folder, False)
+    if fig_save_folder:
+        visualise(img_rotated_arr, [upper_middle_x_on_line], [upper_middle_y_on_line], fig_save_folder, False)
 
     # upper 기준선 위 중간점이 리벳에 닿는 점 구하기
     rivet_x_touching, rivet_y_touching = get_colour_touching_coords_by_moving_on_y_axis(img_rotated_arr, upper_middle_x_on_line, upper_middle_y_on_line, RIVET)
-    # visualise(img_rotated_arr, [upper_middle_x_on_line, rivet_x_touching], [upper_middle_y_on_line, rivet_y_touching], fig_save_folder, False, True)
+    if fig_save_folder:
+        visualise(img_rotated_arr, [upper_middle_x_on_line, rivet_x_touching], [upper_middle_y_on_line, rivet_y_touching], fig_save_folder, False, True)
     
     # 계산
     pixel_length = (upper_middle_y_on_line - rivet_y_touching)
@@ -619,14 +627,18 @@ def head_height_wrapper(path,
                         lower_type,
                         lower_thickness,
                         weights,
-                        head_diameter):
-        
-    # timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    # fig_save_folder = Path(f"figs/{timestamp}")
-    # if not fig_save_folder.exists():
-    #     fig_save_folder.mkdir(parents=True)
+                        head_diameter,
+                        is_from_gen=False,
+                        to_save_fig=False):
+
+    if to_save_fig:
+        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        fig_save_folder = Path(f"figs/{timestamp}")
+        if not fig_save_folder.exists():
+            fig_save_folder.mkdir(parents=True)
     
-    img_rotated_arr, (left_x_rivet, left_y_rivet, right_x_rivet, right_y_rivet) = create_base_image(path, False)
+    fig_save_folder = None
+    img_rotated_arr, (left_x_rivet, left_y_rivet, right_x_rivet, right_y_rivet) = create_base_image(path, is_from_gen)
     plates, mms = select_plates_for_mm_calculation(
         upper_type,
         upper_thickness,
@@ -641,7 +653,6 @@ def head_height_wrapper(path,
         mms,
         weights,
     )
-    
     head_height = get_head_height(
         img_rotated_arr, 
         left_x_rivet, 
@@ -650,6 +661,6 @@ def head_height_wrapper(path,
         right_y_rivet,
         head_diameter,
         weighted_mm_per_pixel,
-        True
+        fig_save_folder
     )
     return head_height
