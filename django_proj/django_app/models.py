@@ -4,6 +4,7 @@ from django import forms
 from .utils import util_gen
 
 # TODO: PATH to be derived from env
+# PATH = "./django_proj/django_app/utils/metadata.csv"
 PATH = "./django_app/utils/metadata.csv"
 OP = util_gen.GenOptionProducer(PATH)
 
@@ -16,7 +17,7 @@ OPTION_LOWER_TYPE = OP.get_condition_options_lower_type()
 
 class GenCondtidionForm(forms.Form):
 
-    plate_count = forms.ChoiceField(widget=forms.RadioSelect, choices=[("2겹", "2겹"), ("3겹", "3겹")])
+    plate_count = forms.ChoiceField(widget=forms.RadioSelect, choices=[(2, "2겹"), (3, "3겹")])
     이미지_장수 = forms.IntegerField()
     rivet = forms.ChoiceField(choices=OPTION_RIVET)
     die = forms.ChoiceField(choices=OPTION_DIE)

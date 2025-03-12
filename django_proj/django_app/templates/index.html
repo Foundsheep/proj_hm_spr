@@ -1,5 +1,122 @@
 {% extends "base.html" %}
 
 {% block head_message %}
-Choose a service from the navbar
+공정 조건을 선택하세요
+{% endblock %}
+{% block content %}
+<div class="container w-50 mt-5">
+  <form class="p-4 border rounded bg-light">
+    <h6 class="text-center mb-4">공정 조건 선택</h6>
+    <div class="col mb-3">
+      <div class="row border rounded">
+        <div class="col-md-3 text-center d-flex align-items-center justify-content-center">
+          상판
+        </div>
+        <div class="col-md-3 d-flex align-items-center justify-content-center">
+          <div class="row border rounded">
+            <label class="form-check-label">알루미늄
+              <input type="checkbox" class="form-check-input" checked>
+            </label>
+            <label class="form-check-label">도금
+              <input type="checkbox" class="form-check-input" checked style="margin-left: 2.0rem;">
+            </label>
+          </div>
+        </div>
+        <div class="col-md-6 border rounded d-flex align-items-center">
+          <div class="d-flex gap-2">
+            <label class="">
+              <select class="form-select form-control">
+                <option value="상판1">SBAETET###</option>
+                <option value="상판2">상판2</option>
+                <option value="상판3">상판3</option>
+              </select>
+            </label>
+            <label class="">
+              <select class="form-select form-control">
+                <option value="상판1">SBAETET###</option>
+                <option value="상판2">상판2</option>
+                <option value="상판3">상판3</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col mb-3">
+        <div class="row border rounded">
+          <div class="col-md-3 text-center d-flex align-items-center justify-content-center">
+            중판
+          </div>
+          <div class="col-md-3 d-flex align-items-center justify-content-center">
+            <div class="row border rounded">
+              <label class="form-check-label">알루미늄
+                <input type="checkbox" class="form-check-input" checked>
+              </label>
+              <label class="form-check-label">도금
+                <input type="checkbox" class="form-check-input" checked style="margin-left: 2.0rem;">
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6 border rounded d-flex align-items-center">
+            <div class="d-flex gap-2">
+              <label class="">
+                <select class="form-select form-control">
+                  <option value="상판1">SBAETET###</option>
+                  <option value="상판2">상판2</option>
+                  <option value="상판3">상판3</option>
+                </select>
+              </label>
+              <label class="">
+                <select class="form-select form-control">
+                  <option value="상판1">SBAETET###</option>
+                  <option value="상판2">상판2</option>
+                  <option value="상판3">상판3</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col mb-3">
+        <div class="row border rounded">
+          <div class="col-md-3 text-center d-flex align-items-center justify-content-center">
+            하판
+          </div>
+          <div class="col-md-3 d-flex align-items-center justify-content-center">
+            <div class="row border rounded">
+              <label class="form-check-label">알루미늄
+                <input type="checkbox" class="form-check-input" checked>
+              </label>
+              <label class="form-check-label">도금
+                <input type="checkbox" class="form-check-input" checked style="margin-left: 2.0rem;">
+              </label>
+            </div>
+          </div>
+          <div class="col-md-6 border rounded d-flex align-items-center">
+            <div class="d-flex gap-2">
+              <label class="">
+                <select class="form-select form-control">
+                  <option value="상판1">SBAETET###</option>
+                  <option value="상판2">상판2</option>
+                  <option value="상판3">상판3</option>
+                </select>
+              </label>
+              <label class="">
+                <select class="form-select form-control">
+                  <option value="상판1">SBAETET###</option>
+                  <option value="상판2">상판2</option>
+                  <option value="상판3">상판3</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+      <div class="col text-center">
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </form>
+</div>
 {% endblock %}

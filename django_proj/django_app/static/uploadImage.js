@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Upload button
     uploadBtn.addEventListener('click', uploadFiles);
 
+    // when event is triggered, this lets the event to execute its default action and stops it to be propagated further
     function preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -84,24 +85,39 @@ document.addEventListener('DOMContentLoaded', function() {
         if (files.length === 0) {
             alert('Please select files to upload');
             return;
-        } else if (files.length > 20) {
-            alert("images cannot be uploaded with more than 20 iamges");
+        } else if (files.length > 10) {
+            alert("images cannot be uploaded with more than 10 iamges");
             return;
         }
 
-        
+        const csrftoken = getCookie('csrftoken');
         const formData = new FormData();
         Array.from(files).forEach(file => {
             formData.append('images', file, file.name);
         });
 
-        const url = "/api/process-segmentation/"
+        const url = "/process-segmentation/"
         const response = await fetch(url, {
             method: "POST",
-            body: formData
+            body: formData,
+            headers: {
+                "X-CSRFToken": csrftoken,
+            }
         })
+        
+        if  (!response.ok) {
+            console.log(`Reponse status: ${response.ok}`);
+            alaert(`Upload failed with status; ${response.status}`);
+        }
+        
+        const content = await response.json();
+        resultContainer.classList.remove("d-none")
+        resultContainer.classList.add("d-flex")
+        resultContainer.innerHTML = `<div>
+        <img src="data:image/png;base64,${content["result"]}" width=300 height=200>
+        </div>`
+        alert(`${files.length} file(s) uploaded successfully`);
 
-        console.log(await response.json())
         // // Show loading state
         // resultContainer.innerHTML = "<div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Loading...</span></div>";
 
@@ -120,6 +136,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-        alert(`${files.length} file(s) ready to upload`);
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 });

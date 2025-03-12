@@ -9,13 +9,21 @@ import torch
 class DjangoAppConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "django_app"
-    
+
+    # --------- when invoking inside 'django_proj' folder ---------
     # load a model
     ckpt_path = "./django_app/model_ckpt/gen/last.ckpt"
     hparams_path = "./django_app/model_ckpt/gen/hparams.yaml"
+    plate_dict_path = "./django_app/model_src/gen/plate_dict.json"
+    
+    # # --------- for debugging ---------
+    # ckpt_path = "./django_proj/django_app/model_ckpt/gen/last.ckpt"
+    # hparams_path = "./django_proj/django_app/model_ckpt/gen/hparams.yaml"
+    # plate_dict_path = "./django_proj/django_app/model_src/gen/plate_dict.json"
     
     with open(hparams_path) as stream:
         hp = yaml.safe_load(stream)
+    print("========================", hp, "========================")
     gen_model = CustomDDPM.load_from_checkpoint(
         checkpoint_path=ckpt_path,
         multi_class_nums=hp["multi_class_nums"],
@@ -32,7 +40,7 @@ class DjangoAppConfig(AppConfig):
         inference_width=hp["inference_width"],
         lr=hp["lr"],
         is_train=False,
-        strict=False,
+        strict=False
     )
     
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -41,6 +49,6 @@ class DjangoAppConfig(AppConfig):
     transforms = get_transforms(
         height=480,
         width=640,
-        plate_dict_path="./django_app/model_src/gen/plate_dict.json"
+        plate_dict_path=plate_dict_path
     )
     print("gen_model loaded!!!!")
