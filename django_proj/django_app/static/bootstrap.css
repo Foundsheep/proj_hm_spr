@@ -12260,3 +12260,9 @@ legend {
   font-size: 18px;
   color: #777;
 }
+
+.disabled-label {
+  color: #aaa !important;  /* Grey out the label */
+  cursor: not-allowed;
+  opacity: 0.5;
+}

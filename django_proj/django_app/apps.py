@@ -16,6 +16,9 @@ class DjangoAppConfig(AppConfig):
     hparams_path = "./django_app/model_ckpt/gen/hparams.yaml"
     plate_dict_path = "./django_app/model_src/gen/plate_dict.json"
     
+    # plate_dict_path
+    PLATE_DICT_PATH = "./django_app/static/plate_dict.json"
+    
     # # --------- for debugging ---------
     # ckpt_path = "./django_proj/django_app/model_ckpt/gen/last.ckpt"
     # hparams_path = "./django_proj/django_app/model_ckpt/gen/hparams.yaml"

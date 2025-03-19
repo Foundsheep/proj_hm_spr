@@ -1,12 +1,15 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block head_message %}
 공정 조건을 선택하세요
 {% endblock %}
 {% block content %}
-<div class="container w-50 mt-5">
-  <form class="p-4 border rounded bg-light">
+<div class="container w-75 mt-5">
+  <form class="p-4 border rounded bg-light" action="/method-result/" method="post">
+    {% csrf_token %}
     <h6 class="text-center mb-4">공정 조건 선택</h6>
+    <!-- 상판 -->
     <div class="col mb-3">
       <div class="row border rounded">
         <div class="col-md-3 text-center d-flex align-items-center justify-content-center">
@@ -14,109 +17,136 @@
         </div>
         <div class="col-md-3 d-flex align-items-center justify-content-center">
           <div class="row border rounded">
-            <label class="form-check-label">알루미늄
-              <input type="checkbox" class="form-check-input" checked>
+            <label class="form-check-label" for="top_material">알루미늄
+              <input type="radio" class="form-check-input" name="top_material" id="top_aluminum" value="aluminum" checked>
             </label>
-            <label class="form-check-label">도금
-              <input type="checkbox" class="form-check-input" checked style="margin-left: 2.0rem;">
-            </label>
+            <div class="col">
+              <label class="form-check-label" for="top_material">철
+                <input type="radio" class="form-check-input" name="top_material" id="top_steel" value="steel" style="margin-left: 3rem;">
+              </label>
+              <label class="form-check-label" for="top_is_coated" id="top_coated_label">도금
+                <input type="checkbox" class="form-check-input" name="top_is_coated" id="top_is_coated" value="coated">
+              </label>
+            </div>
           </div>
         </div>
         <div class="col-md-6 border rounded d-flex align-items-center">
           <div class="d-flex gap-2">
-            <label class="">
-              <select class="form-select form-control">
-                <option value="상판1">SBAETET###</option>
-                <option value="상판2">상판2</option>
-                <option value="상판3">상판3</option>
+            <label class="" for="top_name">
+              <select class="form-select form-control" name="top_name" id="top_name">
+                <!-- {% for plate_name in plate_name_list %}
+                  <option value={{ plate_name }}>{{ plate_name }}</option>
+                {% endfor %} -->
               </select>
             </label>
-            <label class="">
-              <select class="form-select form-control">
-                <option value="상판1">SBAETET###</option>
-                <option value="상판2">상판2</option>
-                <option value="상판3">상판3</option>
+            <label class="" for="top_thickness">
+              <select class="form-select form-control" name="top_thickness", id="top_thickness">
+                {% for thickness in plate_thickness_list %}
+                  <option value={{ thickness }}>{{ thickness }}</option>
+                {% endfor %}
               </select>
             </label>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 중판 -->
     <div class="col mb-3">
-        <div class="row border rounded">
-          <div class="col-md-3 text-center d-flex align-items-center justify-content-center">
-            중판
-          </div>
-          <div class="col-md-3 d-flex align-items-center justify-content-center">
-            <div class="row border rounded">
-              <label class="form-check-label">알루미늄
-                <input type="checkbox" class="form-check-input" checked>
+      <div class="row border rounded">
+        <div class="col-md-3 text-center d-flex align-items-center justify-content-center">
+          중판
+        </div>
+        <div class="col-md-3 d-flex align-items-center justify-content-center">
+          <div class="row border rounded">
+            <label class="form-check-label" for="middle_material">알루미늄
+              <input type="radio" class="form-check-input" name="middle_material" id="middle_aluminum" value="aluminum" checked>
+            </label>
+            <div class="col">
+              <label class="form-check-label" for="middle_material">철
+                <input type="radio" class="form-check-input" name="middle_material" id="middle_steel" value="steel" style="margin-left: 3rem;">
               </label>
-              <label class="form-check-label">도금
-                <input type="checkbox" class="form-check-input" checked style="margin-left: 2.0rem;">
-              </label>
-            </div>
-          </div>
-          <div class="col-md-6 border rounded d-flex align-items-center">
-            <div class="d-flex gap-2">
-              <label class="">
-                <select class="form-select form-control">
-                  <option value="상판1">SBAETET###</option>
-                  <option value="상판2">상판2</option>
-                  <option value="상판3">상판3</option>
-                </select>
-              </label>
-              <label class="">
-                <select class="form-select form-control">
-                  <option value="상판1">SBAETET###</option>
-                  <option value="상판2">상판2</option>
-                  <option value="상판3">상판3</option>
-                </select>
+              <label class="form-check-label" for="middle_is_coated" id="middle_coated_label">도금
+                <input type="checkbox" class="form-check-input" name="middle_is_coated" id="middle_is_coated" value="coated">
               </label>
             </div>
           </div>
         </div>
+        <div class="col-md-6 border rounded d-flex align-items-center">
+          <div class="d-flex gap-2">
+            <label class="" for="middle_name">
+              <select class="form-select form-control" name="middle_name" id="middle_name">
+                <!-- {% for plate_name in plate_name_list %}
+                  <option value={{ plate_name }}>{{ plate_name }}</option>
+                {% endfor %} -->
+              </select>
+            </label>
+            <label class="" for="middle_thickness">
+              <select class="form-select form-control" name="middle_thickness", id="middle_thickness">
+                <option value="no-value" selected>선택 안 함</option>
+                {% for thickness in plate_thickness_list %}
+                  <option value={{ thickness }}>{{ thickness }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+        </div>
       </div>
-      <div class="col mb-3">
-        <div class="row border rounded">
-          <div class="col-md-3 text-center d-flex align-items-center justify-content-center">
-            하판
-          </div>
-          <div class="col-md-3 d-flex align-items-center justify-content-center">
-            <div class="row border rounded">
-              <label class="form-check-label">알루미늄
-                <input type="checkbox" class="form-check-input" checked>
+    </div>
+
+    <!-- 하판 -->
+    <div class="col mb-3">
+      <div class="row border rounded">
+        <div class="col-md-3 text-center d-flex align-items-center justify-content-center">
+          하판
+        </div>
+        <div class="col-md-3 d-flex align-items-center justify-content-center">
+          <div class="row border rounded">
+            <label class="form-check-label" for="bottom_material">알루미늄
+              <input type="radio" class="form-check-input" name="bottom_material" id="bottom_aluminum" value="aluminum" checked>
+            </label>
+            <div class="col">
+              <label class="form-check-label" for="bottom_material">철
+                <input type="radio" class="form-check-input" name="bottom_material" id="bottom_steel" value="steel" style="margin-left: 3rem;">
               </label>
-              <label class="form-check-label">도금
-                <input type="checkbox" class="form-check-input" checked style="margin-left: 2.0rem;">
-              </label>
-            </div>
-          </div>
-          <div class="col-md-6 border rounded d-flex align-items-center">
-            <div class="d-flex gap-2">
-              <label class="">
-                <select class="form-select form-control">
-                  <option value="상판1">SBAETET###</option>
-                  <option value="상판2">상판2</option>
-                  <option value="상판3">상판3</option>
-                </select>
-              </label>
-              <label class="">
-                <select class="form-select form-control">
-                  <option value="상판1">SBAETET###</option>
-                  <option value="상판2">상판2</option>
-                  <option value="상판3">상판3</option>
-                </select>
+              <label class="form-check-label" for="bottom_is_coated" id="bottom_coated_label">도금
+                <input type="checkbox" class="form-check-input" name="bottom_is_coated" id="bottom_is_coated" value="coated">
               </label>
             </div>
           </div>
         </div>
+        <div class="col-md-6 border rounded d-flex align-items-center">
+          <div class="d-flex gap-2">
+            <label class="" for="bottom_name">
+              <select class="form-select form-control" name="bottom_name" id="bottom_name">
+                <!-- {% for plate_name in plate_name_list %}
+                  <option value={{ plate_name }}>{{ plate_name }}</option>
+                {% endfor %} -->
+              </select>
+            </label>
+            <label class="" for="bottom_thickness">
+              <select class="form-select form-control" name="bottom_thickness", id="bottom_thickness">
+                {% for thickness in plate_thickness_list %}
+                  <option value={{ thickness }}>{{ thickness }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+        </div>
       </div>
-      <div class="row">
+    </div>
+
+    <div class="row">
       <div class="col text-center">
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <button type="submit" class="btn btn-primary" onclick="return validateMiddlePlate();">Submit</button>
       </div>
     </div>
   </form>
 </div>
+<script id="plate_name_dict" type="application/json">
+  {{ plate_name_dict|safe}}
+</script>
+<script src="{% static 'changeSelectOptions.js' %}"></script>
+<script src="{% static 'validateMiddlePlate.js' %}"></script>
+
 {% endblock %}
