@@ -432,30 +432,48 @@ def get_coords_from_centre_for_both_sides(diameter_mm, middle_x, weighted_mm_per
     right_x_further = int(middle_x + half_pixel)
     return left_x_further, right_x_further
 
-def get_colour_touching_coords_by_moving_on_x_axis(img_rotated_arr, x, y, colour, towards_left):
-    is_not_on_colour = any(img_rotated_arr[y, x, :] != colour)
-    
-    if towards_left:
-        while is_not_on_colour:
-            x -= 1
-            is_not_on_colour = any(img_rotated_arr[y, x, :] != colour)
+def decide_x_value_and_moving_direction(img_rotated_arr, x):
+    towards_left = None
+    if x < 0:
+        x = 0
+        towards_left = False
+    elif x >= img_rotated_arr.shape[1]:
+        x = img_rotated_arr.shape[1] - 1
+        towards_left = True
     else:
-        while is_not_on_colour:
-            x += 1
-            is_not_on_colour = any(img_rotated_arr[y, x, :] != colour)
-    # print(f"...modified {x = } / {y = }")   
+        pass
+    return x, towards_left
+
+def get_colour_touching_coords_by_moving_on_x_axis(img_rotated_arr, x, y, colour, towards_left):
+    if towards_left is not None:
+        is_not_on_colour = any(img_rotated_arr[y, x, :] != colour)
+        if towards_left:
+            while is_not_on_colour:
+                x -= 1
+                try:
+                    is_not_on_colour = any(img_rotated_arr[y, x, :] != colour)
+                
+                # 오른쪽에서부터 계속 1씩 빼왔는데 못 찾을 경우 그냥 맨 오른쪽 UPPER 코너 값으로 할당
+                except:
+                    left_x, left_y, right_x, right_y = get_line_coords_via_corners(img_rotated_arr, UPPER)
+                    x = right_x
+                    y = right_y
+                    break
+        else:
+            while is_not_on_colour:
+                x += 1
+                try:
+                    is_not_on_colour = any(img_rotated_arr[y, x, :] != colour)
+                
+                # 왼쪽에서부터 계속 1씩 더해왔는데 못 찾을 경우 그냥 맨 왼쪽 UPPER 코너 값으로 할당
+                except IndexError:
+                    left_x, left_y, right_x, right_y = get_line_coords_via_corners(img_rotated_arr, UPPER)
+                    x = left_x
+                    y = left_y
+                    break
     return x, y    
 
 def get_colour_touching_coords_by_moving_on_y_axis(img_rotated_arr, x, y, colour):
-    if x < 0:
-        # print(f"... x value goes beyond the fig / {x = }")
-        x = 0
-        x, y = get_colour_touching_coords_by_moving_on_x_axis(img_rotated_arr, x, y, colour, False)
-    elif x >= img_rotated_arr.shape[1]:
-        # print(f"... x value goes beyond the fig / {x = }")
-        x = img_rotated_arr.shape[1] - 1
-        x, y = get_colour_touching_coords_by_moving_on_x_axis(img_rotated_arr, x, y, colour, True)
-
     is_hovering = any(img_rotated_arr[y, x, :] != colour)
     
     if is_hovering:
@@ -534,13 +552,21 @@ def get_head_height(img_rotated_arr,
         visualise(img_rotated_arr, [lx_further, rx_further], [middle_y, middle_y], fig_save_folder, True)
 
     # 리벳 양쪽 두 점이 upper와 만나는 점 구하기
-    lx_further, ly_touching = get_colour_touching_coords_by_moving_on_y_axis(img_rotated_arr, lx_further, middle_y, UPPER)
-    rx_further, ry_touching = get_colour_touching_coords_by_moving_on_y_axis(img_rotated_arr, rx_further, middle_y, UPPER)
+    # -- 1) x좌표 먼저 구하기
+    lx_further, towards_left = decide_x_value_and_moving_direction(img_rotated_arr, lx_further)
+    lx_touching, middle_y = get_colour_touching_coords_by_moving_on_x_axis(img_rotated_arr, lx_further, middle_y, UPPER, towards_left)
+
+    rx_further, towards_left = decide_x_value_and_moving_direction(img_rotated_arr, rx_further)
+    rx_touching, middle_y = get_colour_touching_coords_by_moving_on_x_axis(img_rotated_arr, rx_further, middle_y, UPPER, towards_left)
+    
+    # -- 2) y좌표 구하기
+    lx_touching, ly_touching = get_colour_touching_coords_by_moving_on_y_axis(img_rotated_arr, lx_touching, middle_y, UPPER)
+    rx_touching, ry_touching = get_colour_touching_coords_by_moving_on_y_axis(img_rotated_arr, rx_touching, middle_y, UPPER)
     if fig_save_folder:
-        visualise(img_rotated_arr, [lx_further, rx_further], [ly_touching, ry_touching], fig_save_folder, True)
+        visualise(img_rotated_arr, [lx_touching, rx_touching], [ly_touching, ry_touching], fig_save_folder, True)
     
     # upper 위 두 점의 중간점 구하기
-    upper_middle_x_on_line, upper_middle_y_on_line = get_middle_coords(lx_further, ly_touching, rx_further, ry_touching)
+    upper_middle_x_on_line, upper_middle_y_on_line = get_middle_coords(lx_touching, ly_touching, rx_touching, ry_touching)
     if fig_save_folder:
         visualise(img_rotated_arr, [upper_middle_x_on_line], [upper_middle_y_on_line], fig_save_folder, False)
 
@@ -615,7 +641,7 @@ def visualise(img_rotated_arr: np.array,
     
     # get index
     idx = get_zfill_index(count_image_files(fig_save_folder))
-    plt.savefig(f"{fig_save_folder}/{idx}.png")
+    plt.savefig(f"{str(fig_save_folder)}/{idx}.png")
     
     # print(f"...fig saved with {idx} number")
 
@@ -631,13 +657,13 @@ def head_height_wrapper(path,
                         is_from_gen=False,
                         to_save_fig=False):
 
+    fig_save_folder = None
     if to_save_fig:
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         fig_save_folder = Path(f"figs/{timestamp}")
         if not fig_save_folder.exists():
             fig_save_folder.mkdir(parents=True)
     
-    fig_save_folder = None
     img_rotated_arr, (left_x_rivet, left_y_rivet, right_x_rivet, right_y_rivet) = create_base_image(path, is_from_gen)
     plates, mms = select_plates_for_mm_calculation(
         upper_type,
