@@ -3,11 +3,11 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("", views.index, name="index"),
-    path("method-result/", views.index_result, name="index-result"),
-    path("seg/", views.seg, name="seg"),
-    path("gen/", views.gen, name="gen"),
-    path("steel-spot-welding/", views.steel_spot_welding, name="steel-spot_welding"),
-    path("steel-spot-welding-detail/", views.steel_spot_welding_detail, name="steel-spot_welding_detail"),
-    path("process-segmentation/", views.process_segmentation, name="process_segmentation"),
+    path("", views.page_index, name="index"),
+    path("method-result/", views.page_index_result, name="index-result"),
+    path("seg/", views.page_seg_main, name="seg"),
+    path("gen/", views.page_gen_main, name="gen"),
+    path("steel-spot-welding/", views.page_ssw_main, name="steel-spot_welding"),
+    path("steel-spot-welding-detail/", views.page_ssw_detail, name="steel-spot_welding_detail"),
+    path("api/segment", views.process_segmentation, name="process_segmentation"),
 ]

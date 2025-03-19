@@ -4,30 +4,40 @@ from django.http import JsonResponse, HttpResponse
 from .apps import DjangoAppConfig
 from .models import *
 from .utils.util_gen import generate_image, convert_image_to_base64
+from .utils.util_index import get_plate_name_list_in_dict, get_plate_thickness_list
 import torch
 
 from PIL import Image
 import numpy as np
 import traceback
+import json
 
-def index(req):
+def page_index(req):
     context = {}
+    
+    # update the context
+    plate_name_dict = get_plate_name_list_in_dict(DjangoAppConfig.PLATE_DICT_PATH)    
+    plate_thickness_list = get_plate_thickness_list(DjangoAppConfig.PLATE_DICT_PATH)
+    context.update({"plate_name_dict": json.dumps(plate_name_dict)})
+    context.update({"plate_thickness_list": plate_thickness_list})
     return render(req, "index.html", context)
 
-def index_result(req):
+def page_index_result(req):
     context = {}
+    if req.method == "POST":
+        print(req.POST)
     return render(req, "method-result.html", context)
 
-def steel_spot_welding(req):
+def page_ssw_main(req):
     context = {}
     return render(req, "steel-spot-welding.html", context)
 
-def steel_spot_welding_detail(req):
+def page_ssw_detail(req):
     context = {}
     return render(req, "steel-spot-welding-detail.html", context)
     
-# @csrf_exempt
-def seg(req):
+@csrf_exempt
+def page_seg_main(req):
     context = {}
     if req.method == "POST":
         if "images" not in req.FILES:
@@ -52,7 +62,7 @@ def seg(req):
 
     return render(req, "seg.html", context)
 
-def gen(req):
+def page_gen_main(req):
     context = {
         "rivet": OPTION_RIVET,
         "die": OPTION_DIE,
