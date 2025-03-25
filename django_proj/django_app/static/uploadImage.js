@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const filePreview = document.getElementById('file-preview');
     const fileList = document.getElementById('file-list');
     const uploadBtn = document.getElementById('upload-btn');
+    const resetBtn = document.getElementById('reset-btn');
     const resultContainer = document.getElementById('segmentation-results');
 
     // Prevent default drag behaviors
@@ -34,6 +35,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Upload button
     uploadBtn.addEventListener('click', uploadFiles);
+
+    // Reset button
+    resetBtn.addEventListener('click', resetFiles);
+
 
     // when event is triggered, this lets the event to execute its default action and stops it to be propagated further
     function preventDefaults(e) {
@@ -96,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('images', file, file.name);
         });
 
-        const url = "/process-segmentation/"
+        const url = "/api/segment/"
         const response = await fetch(url, {
             method: "POST",
             body: formData,
@@ -133,9 +138,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // .catch(error => {
         //     console.error('Error:', error);
         // });
+    }
 
-
-
+    function resetFiles() {
+        location.reload();
     }
 
     function getCookie(name) {

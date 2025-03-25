@@ -6,26 +6,36 @@
 
 {% block content %}
 <div class="container w-50 mt-5">    
-  <form class="border rounded bg-light d-flex flex-column gap-4">
+  <form id="methodForm" class="border rounded bg-light d-flex flex-column gap-4" action="/" method="post">
+    {% csrf_token %}
+
+    <!-- hidden inputs from the preivous page -->
+    {% for key, value in previous_data.items %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+    {% endfor %}
+
     <p class="text-center mt-4">선정 이유 시각화</p>
     <img src="{% static 'clustering.png' %}" alt="explanation" width="300", height="300" class="mx-auto mb-4 d-block">
-    <div class="d-flex row border rounded align-items-center justify-content-center mx-auto mt-4">
-      <label class="d-flex justify-content-center">1순위
-        <input type="radio" class="form-check-input" id="first_rank" name="rank" checked>
-      </label>
-      <label class="d-flex justify-content-center">2순위
-        <input type="radio" class="form-check-input" id="second-rank" name="rank">
-      </label>
-      <label class="d-flex justify-content-center">3순위
-        <input type="radio" class="form-check-input" id="third-rank" name="rank">
-      ㅇㄹㅇㄹㅇㄹ
-      </label>
+    <div class="d-flex justify-content-center">
+      <div class="w-75 border rounded">
+        <div class="d-flex flex-row flex-column gap-2 align-items-center justify-content-center mx-auto my-2">
+          <label class="d-flex justify-content-center form-check-label" for="first-rank">1순위
+            <input type="radio" class="form-check-input ms-1 me-5" id="first-rank" name="method" checked value="{{ first }}">{{ first }}
+          </label>
+          <label class="d-flex justify-content-center form-check-label" for="second-rank">2순위
+            <input type="radio" class="form-check-input ms-1 me-5" id="second-rank" name="method" value="{{ second }}">{{ second }}
+          </label>
+          <label class="d-flex justify-content-center form-check-label" for="third-rank">3순위
+            <input type="radio" class="form-check-input ms-1 me-5" id="third-rank" name="method" value="{{ third }}">{{ third }}
+          </label>
+        </div>
+      </div>
     </div>
     <div class="col text-center mb-4">
-      <button type="submit" class="btn btn-primary">진행</button>
-      <button type="submit" class="btn btn-primary">이전</button>
+      <button type="submit" class="btn btn-primary" onclick="updateFormAction(event)">진행</button>
+      <button type="button" class="btn btn-secondary" onclick="window.location.href = document.referrer">이전</button>
     </div>
   </form>
 </div>
-
+<script src="{% static 'updateFormAction.js' %}"></script>
 {% endblock %}

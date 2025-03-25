@@ -4,7 +4,7 @@ from django.http import JsonResponse, HttpResponse
 from .apps import DjangoAppConfig
 from .models import *
 from .utils.util_gen import generate_image, convert_image_to_base64
-from .utils.util_index import get_plate_name_list_in_dict, get_plate_thickness_list
+from .utils.util_index import get_plate_name_list_in_dict, get_plate_thickness_list, recommend_attaching_method
 import torch
 
 from PIL import Image
@@ -25,15 +25,22 @@ def page_index(req):
 def page_index_result(req):
     context = {}
     if req.method == "POST":
-        print(req.POST)
+        form_data = req.POST
+        recommendation_dict = recommend_attaching_method(form_data)
+        
+        # context update
+        context.update(recommendation_dict)
+        context.update({"previous_data": form_data})
     return render(req, "method-result.html", context)
 
 def page_ssw_main(req):
+    print(req.POST)
     context = {}
     return render(req, "steel-spot-welding.html", context)
 
 def page_ssw_detail(req):
     context = {}
+    print(req.POST)
     return render(req, "steel-spot-welding-detail.html", context)
     
 @csrf_exempt
@@ -87,7 +94,7 @@ def page_gen_main(req):
     context.update({"form": form})
     return render(req, "gen.html", context)
 
-def process_segmentation(req):
+def api_process_segmentation(req):
     context = {}
     if req.method == "POST":
         if "images" not in req.FILES:

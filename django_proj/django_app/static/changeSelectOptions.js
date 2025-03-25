@@ -2,8 +2,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // Load plate names from Django
     const plateNameDict = JSON.parse(document.getElementById("plate_name_dict").textContent.trim());
 
-    console.log(plateNameDict);
-
     function updateSelectOptions(type) {
         const isAluminum = document.getElementById(`${type}_aluminum`).checked;
         const isSteel = document.getElementById(`${type}_steel`).checked;

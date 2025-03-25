@@ -20,14 +20,24 @@
             <h6>Selected Files:</h6>
             <ul id="file-list" class="list-group"></ul>
             <button id="upload-btn" class="btn btn-success mt-3">Upload Files</button>
-            <button id="reset-btn" class="btn btn-secondary mt-3">초기화</button>
           </div>
         </div>
       </div>
-
-      <!-- result container -->
+      <!-- Segmentation Results Container -->
+      <div class="border rounded" style="height: 300px; margin: auto;">
+        <div id="segmentation-results" class="mt-4 d-none">
+          <!-- <img src="data:image/png;base64,{{ first_image }}" -->
+          <img src="{% static '00.png' %}">
+            <!-- Results will be dynamically inserted here -->
+        </div>
+      </div>
       <div>
-
+        <button class="btn btn-primary">저장하기</button>
+      </div>
+      <div class="border rounded" style="height: 200px;">
+        <div class="d-flex justify-content-center align-items-center h-100">
+          MS 기준
+        </div>
       </div>
     </div>
   </div>
