@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('images', file, file.name);
         });
 
-        const url = "/api/segment/"
+        const url = "/seg/"
         const response = await fetch(url, {
             method: "POST",
             body: formData,
@@ -110,18 +110,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         
-        if  (!response.ok) {
-            console.log(`Reponse status: ${response.ok}`);
-            alaert(`Upload failed with status; ${response.status}`);
-        }
+        // if  (!response.ok) {
+        //     console.log(`Reponse status: ${response.ok}`);
+        //     alaert(`Upload failed with status; ${response.status}`);
+        // }
         
-        const content = await response.json();
-        resultContainer.classList.remove("d-none")
-        resultContainer.classList.add("d-flex")
-        resultContainer.innerHTML = `<div>
-        <img src="data:image/png;base64,${content["result"]}" width=300 height=200>
-        </div>`
-        alert(`${files.length} file(s) uploaded successfully`);
+        // const content = await response.json();
+        // resultContainer.classList.remove("d-none")
+        // resultContainer.classList.add("d-flex")
+        // resultContainer.innerHTML = `<div>
+        // <img src="data:image/png;base64,${content["result"]}" width=300 height=200>
+        // </div>`
+        // alert(`${files.length} file(s) uploaded successfully`);
 
         // // Show loading state
         // resultContainer.innerHTML = "<div class='spinner-border text-primary' role='status'><span class='visually-hidden'>Loading...</span></div>";

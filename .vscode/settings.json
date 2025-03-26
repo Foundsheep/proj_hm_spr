@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./django_proj/django_app/model_src/gen"
+    ]
+}

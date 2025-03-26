@@ -91,7 +91,7 @@ def generate_image(conds):
     return out
 
 
-def convert_image_to_base64(img):
+def convert_image_to_base64(img: np.ndarray | Image.Image | torch.Tensor) -> str:
     if isinstance(img, np.ndarray):
         img = Image.fromarray(img)
     elif isinstance(img, torch.Tensor):

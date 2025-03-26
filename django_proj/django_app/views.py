@@ -3,6 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
 from .apps import DjangoAppConfig
 from .models import *
+from .utils.util_seg import segment
 from .utils.util_gen import generate_image, convert_image_to_base64
 from .utils.util_index import get_plate_name_list_in_dict, get_plate_thickness_list, recommend_attaching_method
 import torch
@@ -49,24 +50,14 @@ def page_seg_main(req):
     if req.method == "POST":
         if "images" not in req.FILES:
             return JsonResponse({"error": "No images uploaded"}, status=400)
-        try:
-            images = req.FILES.getlist("images")
-            images = [Image.open(img).convert("RGB") for img in images]
-            
-            shapes = []
-            shapes.append(len(images))            
-            context.update({"shapes": shapes})
-            # print("here")
-            # shapes = [np.array(img).shape for img in images]
-            img_bytes = convert_image_to_base64(images[0])
-            context.update({"first_image": img_bytes})
-            print(img_bytes)
-            return render(req, "seg.html", context)
-        except Exception as e:
-            print("error occured")
-            print(e)
-            return JsonResponse({"code": "failure"})
-
+        images = req.FILES.getlist("images")
+        images = [Image.open(img).convert("RGB") for img in images]
+        
+        outputs = segment(images)
+        print(outputs.shape)
+        outputs = [convert_image_to_base64(out) for out in outputs]
+        context.update({"outputs": outputs})
+        return render(req, "seg.html", context)
     return render(req, "seg.html", context)
 
 def page_gen_main(req):
