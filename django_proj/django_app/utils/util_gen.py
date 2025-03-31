@@ -6,6 +6,7 @@ from PIL import Image
 import io
 import base64
 import numpy as np
+import traceback
 
 class GenOptionProducer:
     def __init__(self, path):
@@ -18,7 +19,7 @@ class GenOptionProducer:
         self.middle_thickness = "middle_thickness"
         self.lower_type = "lower_type"
         self.lower_thickness = "lower_thickness"
-        self.is_javascript = False
+        self.is_javascript = True
         self.method = self._give_unique_list_by_key if self.is_javascript else self._give_unique_tupled_list_by_key
         
     def get_condition_options_rivet(self):
@@ -40,10 +41,10 @@ class GenOptionProducer:
         return pd.read_csv(path)
 
     def _give_unique_list_by_key(self, key):
-        return self.df[key].dropna().unique().tolist()
+        return sorted(self.df[key].dropna().unique().tolist())
     
     def _give_unique_dict_by_key(self, key):
-        return {c: c for c in self.df[key].dropna().unique()}
+        return sorted({c: c for c in self.df[key].dropna().unique()})
     
     def _give_unique_tupled_list_by_key(self, key):
         return sorted([(c, c) for c in self.df[key].dropna().unique()])
@@ -51,19 +52,24 @@ class GenOptionProducer:
     
 def generate_image(conds):
     model = DjangoAppConfig.gen_model
-    transforms = DjangoAppConfig.transforms
+    transforms = DjangoAppConfig.gen_transforms
+    conds = conds.dict()
+    if "middle_type" not in conds.keys():
+        conds["middle_type"] = None
+        conds["middle_thickness"] = None
     
-
+    
+    batch_size = int(conds["number_to_generate"])
     plate_count = transforms["plate_count"](int(conds["plate_count"]))
     rivet = transforms["rivet"](conds["rivet"])
     die = transforms["die"](conds["die"])
     upper_type = transforms["upper_type"](conds["upper_type"])
-    upper_thickness = transforms["upper_thickness"](conds["upper_thickness"])
+    upper_thickness = transforms["upper_thickness"](float(conds["upper_thickness"]))
     middle_type = transforms["middle_type"](conds["middle_type"])
-    middle_thickness = transforms["middle_thickness"](conds["middle_thickness"])
+    middle_thickness = transforms["middle_thickness"](float(conds["middle_thickness"]) if conds["middle_thickness"] is not None else None)
     lower_type = transforms["lower_type"](conds["lower_type"])
-    lower_thickness = transforms["lower_thickness"](conds["lower_thickness"])
-    head_height = transforms["head_height"](conds["head_height"])
+    lower_thickness = transforms["lower_thickness"](float(conds["lower_thickness"]))
+    head_height = transforms["head_height"](float(conds["head_height"]))
     
     categorical_conds = (
         torch.stack([
@@ -80,13 +86,13 @@ def generate_image(conds):
         with torch.no_grad():
             model.eval()
             out = model(
-                batch_size=1,
+                batch_size=batch_size,
                 categorical_conds=categorical_conds,
                 continuous_conds=continuous_conds
             )
     except Exception as e:
-        print(e)
-        out = torch.randn((3, 300, 400))
+        traceback.print_exc()
+        out = torch.randn((batch_size, 3, 300, 400))
     print("************* DONE *************")
     return out
 

@@ -55,7 +55,7 @@ class DjangoAppConfig(AppConfig):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     gen_model.to(DEVICE)
     
-    transforms = get_transforms(
+    gen_transforms = get_transforms(
         height=480,
         width=640,
         plate_dict_path=plate_dict_path

@@ -47,64 +47,44 @@ def page_ssw_detail(req):
 @csrf_exempt
 def page_seg_main(req):
     context = {}
-    if req.method == "POST":
-        if "images" not in req.FILES:
-            return JsonResponse({"error": "No images uploaded"}, status=400)
-        images = req.FILES.getlist("images")
-        images = [Image.open(img).convert("RGB") for img in images]
-        
-        outputs = segment(images)
-        print(outputs.shape)
-        outputs = [convert_image_to_base64(out) for out in outputs]
-        context.update({"outputs": outputs})
-        return render(req, "seg.html", context)
     return render(req, "seg.html", context)
 
 def page_gen_main(req):
+    all_plates = sorted(list(set(OPTION_UPPER_TYPE + OPTION_MIDDLE_TYPE + OPTION_LOWER_TYPE)))
     context = {
         "rivet": OPTION_RIVET,
         "die": OPTION_DIE,
-        "upper_type": OPTION_UPPER_TYPE,
-        "middle_type": OPTION_MIDDLE_TYPE,
-        "lower_type": OPTION_LOWER_TYPE,
+        "upper_type": all_plates,
+        "middle_type": all_plates,
+        "lower_type": all_plates,
     }
-    
-    if req.method == "POST":
-        form = GenCondtidionForm(req.POST)
-        if form.is_valid():
-            data = form.cleaned_data
-            print(data)
-            generated_images = generate_image(data)
-            converted_image = convert_image_to_base64(generated_images)
-            context.update({"generated_images": converted_image})
-            flag = True
-            context.update({"flag": flag})
-    else:
-        form = GenCondtidionForm()
-        
-    context.update({"form": form})
     return render(req, "gen.html", context)
 
+def api_process_generation(req):
+    outputs = None
+    if req.method == "POST":
+        try:
+            print(req.POST)
+            outputs = generate_image(req.POST)
+            outputs = outputs = [convert_image_to_base64(out) for out in outputs]
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+            outputs = "failure"
+    return JsonResponse({"result": outputs})
+
 def api_process_segmentation(req):
-    context = {}
+    outputs = None
     if req.method == "POST":
         if "images" not in req.FILES:
             return JsonResponse({"result": "No images uploaded"}, status=400)
         try:
             images = req.FILES.getlist("images")
             images = [Image.open(img).convert("RGB") for img in images]
-            
-            shapes = []
-            shapes.append(len(images))            
-            context.update({"shapes": shapes})
-            # shapes = [np.array(img).shape for img in images]
-            img_bytes = convert_image_to_base64(images[0])
-            context.update({"first_image": img_bytes})
-            print(img_bytes)
-            # return render(req, "seg.html", context)
+            outputs = segment(images)
+            outputs = [convert_image_to_base64(out) for out in outputs]
         except Exception as e:
-            print("error occured")
             print(e)
-            img_bytes = "failure"
-    return JsonResponse({"result": img_bytes})
-    # return render(req, "seg.html", context)
+            traceback.print_exc()
+            outputs = "failure"
+    return JsonResponse({"result": outputs})

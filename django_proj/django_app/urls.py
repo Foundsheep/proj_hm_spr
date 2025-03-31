@@ -10,4 +10,6 @@ urlpatterns = [
     path("steel-spot-welding/", views.page_ssw_main, name="steel-spot_welding"),
     path("steel-spot-welding-detail/", views.page_ssw_detail, name="steel-spot_welding_detail"),
     path("api/segment/", views.api_process_segmentation, name="process_segmentation"),
+    path("api/generate/", views.api_process_generation, name="process_generation"),
+    
 ]
