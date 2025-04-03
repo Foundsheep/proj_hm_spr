@@ -5,6 +5,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from diffusers import UNet2DModel
 from .utils import *
 from tqdm import tqdm
+import time
 
 class CustomDDPM(L.LightningModule):
     def __init__(
@@ -33,10 +34,14 @@ class CustomDDPM(L.LightningModule):
         self.unet_block_out_channels=unet_block_out_channels
         
         self.unet = UNet2DModel(
+            in_channels=3,
+            out_channels=3,
             sample_size=self.unet_sample_size,
             block_out_channels=self.unet_block_out_channels,
+            norm_num_groups=self.unet_block_out_channels[0],
             num_continuous_class_embeds=self.num_continuous_class_embeds,
-            multi_class_nums=self.multi_class_nums
+            multi_class_nums=self.multi_class_nums,
+            freq_shift=0.0,
         )
         self.train_scheduler = get_scheduler(train_scheduler_name)
         self.inference_scheduler = get_scheduler(inference_scheduler_name)
@@ -44,7 +49,11 @@ class CustomDDPM(L.LightningModule):
         self.inference_batch_size = inference_batch_size
         self.inference_height = inference_height
         self.inference_width = inference_width
+        
         self.optimizer = torch.optim.AdamW(self.unet.parameters(), lr=lr)
+        # # changed for sparse gradient
+        # # https://pytorch.org/docs/stable/generated/torch.nn.Embedding.html
+        # self.optimizer = torch.optim.SGD(self.unet.parameters(), lr=lr)
         self.lr_scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, 1, gamma=0.99)
         self.loss_fn = torch.nn.functional.mse_loss
         self.is_train = is_train
@@ -54,7 +63,6 @@ class CustomDDPM(L.LightningModule):
         
     def shared_step(self, batch, stage):
         image, categorical_conds, continuous_conds = self.unfold_batch(batch)
-        
         noise = torch.randn_like(image, device=self.device)
         timestep = torch.randint(self.train_scheduler.config.num_train_timesteps, (image.size(0), ), device=self.device)
         noisy_image = self.train_scheduler.add_noise(image, noise, timestep)
@@ -75,33 +83,23 @@ class CustomDDPM(L.LightningModule):
         return self.shared_step(batch, "train")
     
     def validation_step(self, batch, batch_idx):
-        real_image, categorical_conds, continuous_conds = self.unfold_batch(batch)
-        real_image = real_image.to(dtype=torch.uint8, device=self.device)
-        fake_image = self(real_image.shape[0], categorical_conds, continuous_conds, to_save_fig=False)
-        fake_image = torch.stack([
-            torch.from_numpy(
-                colour_quantisation(
-                    denormalise_from_minus_one_to_255(f_img)
-                    .cpu()
-                    .permute(1, 2, 0)
-                    .numpy()
-                )
-            ).permute(2, 0, 1)
-            for f_img in fake_image
-        ]).to(dtype=torch.uint8, device=self.device)
-
-        fid = get_fid(fake_image, real_image, self.device)
-        self.log("val_fid", fid, prog_bar=True, on_epoch=True, sync_dist=True)
+        real_images, categorical_conds, continuous_conds = self.unfold_batch(batch)
+        fake_images = self(real_images.shape[0], categorical_conds, continuous_conds, to_save_fig=False)
         
-        fake_image = normalise_to_zero_and_one_from_255(fake_image).to(dtype=torch.float32)
-        real_image = normalise_to_zero_and_one_from_255(real_image).to(dtype=torch.float32)
-        loss = self.loss_fn(fake_image.to(dtype=torch.float32), real_image.to(dtype=torch.float32))
+        # loss is calculated based on the output range [-1, 1]
+        loss = self.loss_fn(fake_images.to(dtype=torch.float32), real_images.to(dtype=torch.float32))
         self.log("val_loss", loss, prog_bar=True, on_epoch=True, sync_dist=True)
+
+        # fid is calculated based on the output range [0, 1]
+        real_images = normalise_to_zero_and_one_from_minus_one(real_images)
+        fake_images = normalise_to_zero_and_one_from_minus_one(fake_images)
+        fid = get_fid(fake_images, real_images, self.device)
+        self.log("val_fid", fid, prog_bar=True, on_epoch=True, sync_dist=True)
 
         # log image
         tb = self.logger.experiment
-        grid_fake = torchvision.utils.make_grid(fake_image)
-        grid_real = torchvision.utils.make_grid(real_image)
+        grid_fake = torchvision.utils.make_grid(fake_images)
+        grid_real = torchvision.utils.make_grid(real_images)
         tb.add_image(
             "val_samples",
             grid_fake,
@@ -112,7 +110,7 @@ class CustomDDPM(L.LightningModule):
             grid_real,
             self.global_step,
         )
-        return 
+        return loss
         
     def configure_optimizers(self):
         return {
@@ -120,10 +118,12 @@ class CustomDDPM(L.LightningModule):
             "lr_scheduler": self.lr_scheduler
         }
     
-    def forward(self, batch_size, categorical_conds, continuous_conds, to_save_fig=True):
+    def forward(self, batch_size, categorical_conds, continuous_conds, do_post_process=False, do_save_fig=True):
         self.inference_scheduler.set_timesteps(self.inference_num_steps)
         
-        image = torch.randn(
+        # if [-1, 1] -> torch.randn
+        # if [0, 1] -> torch.rand
+        images = torch.randn(
             (
                 batch_size,
                 3,
@@ -135,20 +135,25 @@ class CustomDDPM(L.LightningModule):
         
         for t in tqdm(self.inference_scheduler.timesteps):
             outs = self.unet(
-                sample=image, 
+                sample=images, 
                 timestep=t, 
                 multi_class_labels=categorical_conds, 
                 continuous_class_labels=continuous_conds,
             )
-            image = self.inference_scheduler.step(outs.sample, t, image).prev_sample
+            images = self.inference_scheduler.step(outs.sample, t, images).prev_sample
 
             # if OOM occurs... at least try...
-            # del outs
-            # torch.cuda.empty_cache()
-            
-        if to_save_fig:
-            self.save_generated_image(image)
-        return image
+            del outs
+            torch.cuda.empty_cache()
+        
+        if do_post_process:
+            images = resize_to_original_ratio(images, self.inference_height, self.inference_width)
+            images = denormalise_from_minus_one_to_255(images)
+            # images = [colour_quantisation_numpy(img) for out in images]
+
+            if do_save_fig:
+                self.save_generated_image(images)
+        return images
     
     def configure_callbacks(self):
         checkpoint_save_last = ModelCheckpoint(
@@ -161,15 +166,6 @@ class CustomDDPM(L.LightningModule):
             every_n_epochs=250,
             filename="{epoch}-{step}-{train_loss:.4f}_per_250"
         )
-        
-        # # this one is causing an error if resuming training
-        # checkpoint_save_top_loss = ModelCheckpoint(
-        #     save_top_k=3,
-        #     monitor="train_loss",
-        #     mode="min",
-        #     every_n_epochs=1,
-        #     filename="{epoch}-{step}-{train_loss:.4f}"
-        # )
         
         return [checkpoint_save_last, checkpoint_save_per_250]
         
@@ -191,15 +187,17 @@ class CustomDDPM(L.LightningModule):
         lower_thickness = batch["lower_thickness"]
         head_height = batch["head_height"]
         
-        categorical_conds = torch.stack([rivet, die, upper_type, lower_type, middle_type])
-        continuous_conds = torch.stack([plate_count, upper_thickness, lower_thickness, middle_thickness, head_height])
+        # categorical_conds should have a shape of (N of conds, BS)
+        # since it goes into the embedding layer in for loop. e.g.) for c in conds: em_layer[i](c)
+        categorical_conds = torch.stack([rivet, die, upper_type, lower_type, middle_type], dim=0)
         
+        # plate_count removed for its redundancy
+        continuous_conds = torch.stack([upper_thickness, lower_thickness, middle_thickness, head_height], dim=1)
+        # continuous_conds = torch.stack([plate_count, upper_thickness, lower_thickness, middle_thickness, head_height])        
         return image, categorical_conds, continuous_conds
     
     def save_generated_image(self, batch_outs):
-        outs = normalise_to_zero_and_one_from_minus_one(batch_outs)
-        outs = resize_to_original_ratio(outs, self.inference_height, self.inference_width)
-        save_image(outs)
+        save_image(batch_outs)
     
 if __name__ == "__main__":
     ddpm = CustomDDPM(

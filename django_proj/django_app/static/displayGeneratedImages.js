@@ -1,9 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
     const resultContainer = document.getElementById("result-container");
-    const biggerImageBox = document.getElementById("bigger-image-box");
-    const imageBox = document.getElementById("image-box");
+    const outputBox = document.getElementById("output-box");
     const generatedImage = document.getElementById("generated-image");
-    const arrowBtnBox = document.getElementById("arrow-btn-box");
     const previewSentence = document.getElementById("preview-sentence");
     const prevBtn = document.getElementById("prev-btn");
     const pageIndicator = document.getElementById("page-indicator");
@@ -15,15 +13,14 @@ document.addEventListener("DOMContentLoaded", function () {
     let generatedImages = [];
     let currentIndex = 0;
     let formData;
+    let imageSelections = [];
 
     // Submit button click
     submitBtn.addEventListener("click", async function () {
-        
-        // Swith on & off elements
+        const spinner = document.getElementById("loading-spinner");
         previewSentence.classList.add("d-none");
-        imageBox.classList.remove("d-none");
-        arrowBtnBox.classList.remove("d-none");
-
+        spinner.classList.remove("d-none");
+        
         // Call an API
         const form = submitBtn.closest("form");
         formData = new FormData(form);
@@ -38,9 +35,24 @@ document.addEventListener("DOMContentLoaded", function () {
             });
             
             const data = await response.json();
-            
-            if (data.result && Array.isArray(data.result)) {
-                generatedImages = data.result;
+            spinner.classList.add("d-none");
+            if (data.result !== "success") {                                
+                alert("Generation failed. Please try again.");
+                previewSentence.classList.remove("d-none");
+                outputBox.classList.add("d-none");
+                return;
+            }
+
+            // Swith on & off elements
+            outputBox.classList.remove("d-none");
+    
+            if (data.images && Array.isArray(data.images)) {
+                generatedImages = data.images;
+
+                // Images are selected by default
+                for (i = 0; i < generatedImages.length; i++) {
+                    imageSelections.push(true);
+                }
 
                 // Refresh the index everytime called
                 currentIndex = 0;
@@ -65,6 +77,15 @@ document.addEventListener("DOMContentLoaded", function () {
         pageIndicator.textContent = `${index + 1} / ${generatedImages.length}`;
         prevBtn.disabled = index === 0;
         nextBtn.disabled = index === generatedImages.length - 1;
+
+        // checkbox checked = true/false updated
+        const checkbox = document.getElementById("image-select");
+        checkbox.checked = imageSelections[index];
+
+        checkbox.onchange = () => {
+            imageSelections[index] = checkbox.checked;
+        };
+        
     }
 
     // Reset button
@@ -97,6 +118,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const folder = zip.folder("generated_images");
 
         for (let i = 0; i <generatedImages.length; i++) {
+
+            // skip if not selected
+            if (!imageSelections[i]) continue;
 
             // Set file name
             let fileName = [
@@ -136,6 +160,5 @@ document.addEventListener("DOMContentLoaded", function () {
         link.href = URL.createObjectURL(content);
         link.download = "generated_images.zip";
         link.click();
-
     });
 })

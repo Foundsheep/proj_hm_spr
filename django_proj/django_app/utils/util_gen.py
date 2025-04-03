@@ -72,29 +72,33 @@ def generate_image(conds):
     head_height = transforms["head_height"](float(conds["head_height"]))
     
     categorical_conds = (
-        torch.stack([
-            rivet, die, upper_type, middle_type, lower_type
-        ]).to(device=DjangoAppConfig.DEVICE)
+        torch.stack([rivet, die, upper_type, lower_type, middle_type], dim=0)
+        .to(DjangoAppConfig.DEVICE)
     )
-    
+    # continuous_conds = (
+    #     torch.stack([plate_count, upper_thickness, middle_thickness, lower_thickness, head_height])
+    #     .to(device="cuda" if torch.cuda.is_available() else "cpu")
+    # )
     continuous_conds = (
-        torch.stack([
-            plate_count, upper_thickness, middle_thickness, lower_thickness, head_height
-        ]).to(device=DjangoAppConfig.DEVICE)
+        torch.stack([upper_thickness, lower_thickness, middle_thickness, head_height], dim=1)
+        .to(DjangoAppConfig.DEVICE)
     )
+
     try:
         with torch.no_grad():
             model.eval()
-            out = model(
+            outs = model(
                 batch_size=batch_size,
                 categorical_conds=categorical_conds,
-                continuous_conds=continuous_conds
+                continuous_conds=continuous_conds,
+                do_post_process=True,
+                do_save_fig=False,
             )
     except Exception as e:
         traceback.print_exc()
-        out = torch.randn((batch_size, 3, 300, 400))
+        outs = torch.randn((batch_size, 3, 300, 400))
     print("************* DONE *************")
-    return out
+    return outs
 
 
 def convert_image_to_base64(img: np.ndarray | Image.Image | torch.Tensor) -> str:
@@ -102,7 +106,7 @@ def convert_image_to_base64(img: np.ndarray | Image.Image | torch.Tensor) -> str
         img = Image.fromarray(img)
     elif isinstance(img, torch.Tensor):
         # TODO: range should be between [0, 1]
-        img = img.permute(1, 2, 0).numpy() * 255
+        img = img.permute(1, 2, 0).cpu().numpy()
         img = img.astype(np.uint8)
         img = Image.fromarray(img)
     elif isinstance(img, Image.Image):

@@ -192,11 +192,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const content = await response.json();
-        if (!content.result || content.result === "failure") {
+        if (content.result !== "success") {
             alert("Segmentation failed. Please try again.");
             return;
         }
-        segmentedImages = content.result;
+        segmentedImages = content.images;
         resultContainer.classList.remove("d-none");
         resultContainer.classList.add("d-flex");
         

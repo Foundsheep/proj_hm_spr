@@ -3,6 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
 from .apps import DjangoAppConfig
 from .models import *
+from .utils.util_ms_algorithm import head_height_wrapper
 from .utils.util_seg import segment
 from .utils.util_gen import generate_image, convert_image_to_base64
 from .utils.util_index import get_plate_name_list_in_dict, get_plate_thickness_list, recommend_attaching_method
@@ -17,8 +18,8 @@ def page_index(req):
     context = {}
     
     # update the context
-    plate_name_dict = get_plate_name_list_in_dict(DjangoAppConfig.PLATE_DICT_PATH)    
-    plate_thickness_list = get_plate_thickness_list(DjangoAppConfig.PLATE_DICT_PATH)
+    plate_name_dict = get_plate_name_list_in_dict(DjangoAppConfig.plate_dict_path)    
+    plate_thickness_list = get_plate_thickness_list(DjangoAppConfig.plate_dict_path)
     context.update({"plate_name_dict": json.dumps(plate_name_dict)})
     context.update({"plate_thickness_list": plate_thickness_list})
     return render(req, "index.html", context)
@@ -44,7 +45,6 @@ def page_ssw_detail(req):
     print(req.POST)
     return render(req, "steel-spot-welding-detail.html", context)
     
-@csrf_exempt
 def page_seg_main(req):
     context = {}
     return render(req, "seg.html", context)
@@ -61,30 +61,47 @@ def page_gen_main(req):
     return render(req, "gen.html", context)
 
 def api_process_generation(req):
-    outputs = None
+    outputs = {
+        "images": [],
+        "ms_values": [],
+        "result": "success"
+    }
+    
     if req.method == "POST":
         try:
             print(req.POST)
-            outputs = generate_image(req.POST)
-            outputs = outputs = [convert_image_to_base64(out) for out in outputs]
+            images = generate_image(req.POST)
+            for img in images:
+                outputs["images"].append(convert_image_to_base64(img))
+                # outputs["ms_values"].append(head_height_wrapper(img))        
         except Exception as e:
             print(e)
             traceback.print_exc()
-            outputs = "failure"
-    return JsonResponse({"result": outputs})
+            outputs["result"] = "failure"
+    return JsonResponse(outputs)
 
 def api_process_segmentation(req):
-    outputs = None
+    outputs = {
+        "images": [],
+        "ms_values": [],
+        "result": "success"
+    }
+    
     if req.method == "POST":
         if "images" not in req.FILES:
-            return JsonResponse({"result": "No images uploaded"}, status=400)
+            outputs["result"] = "No images uploaded"
+            return JsonResponse(outputs, status=400)
+        
         try:
             images = req.FILES.getlist("images")
             images = [Image.open(img).convert("RGB") for img in images]
-            outputs = segment(images)
-            outputs = [convert_image_to_base64(out) for out in outputs]
+            images = segment(images)
+            
+            for img in images:
+                outputs["images"].append(convert_image_to_base64(img))
+                # outputs["ms_values"].append(head_height_wrapper(img))        
         except Exception as e:
             print(e)
             traceback.print_exc()
-            outputs = "failure"
-    return JsonResponse({"result": outputs})
+            outputs["result"] = "failure"
+    return JsonResponse(outputs)

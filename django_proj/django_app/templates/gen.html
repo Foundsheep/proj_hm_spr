@@ -112,13 +112,22 @@
       <div class="h-100 d-flex flex-column gap-4">
         <div id="bigger-image-box" class="border rounded p-4 d-flex flex-column justify-content-center align-items-center h-75">
           <p id="preview-sentence">SPR 공정 조건을 설정 후 생성해주세요</p>
-          <div id="image-box" class="d-none mb-3">
-            <img id="generated-image" src="" alt="Generated image" class="img-fluid" style="max-height: 300px;">
+          <div id="loading-spinner" class="d-none">
+            <img src="{% static 'loading_spinner.gif' %}" alt="Loading..." />
           </div>
-          <div id="arrow-btn-box" class="d-flex justify-content-center align-items-center gap-3 my-3 d-none">
-            <button id="prev-btn" class="btn btn-outline-secondary">&larr;</button>
-            <span id="page-indicator">0 / 0</span>
-            <button id="next-btn" class="btn btn-outline-secondary">&rarr;</button>
+          <div id="output-box" class="d-none">
+            <div id="image-box" class="mb-3">
+              <img id="generated-image" src="" alt="Generated image" class="img-fluid" style="max-height: 300px;">
+            </div>
+            <div class="d-flex justify-content-end align-items-center gap-2 mb-2">
+              <label for="image-select" class="mb-0">선택</label>
+              <input type="checkbox" id="image-select" class="form-check-input mb-1" checked>
+            </div>
+            <div id="arrow-btn-box" class="d-flex justify-content-center align-items-center gap-3 my-3">
+              <button id="prev-btn" class="btn btn-outline-secondary">&larr;</button>
+              <span id="page-indicator">0 / 0</span>
+              <button id="next-btn" class="btn btn-outline-secondary">&rarr;</button>
+            </div>
           </div>
         </div>
         <div class="border rounded p-4 d-flex flex-column justify-content-center align-items-center h-25">
