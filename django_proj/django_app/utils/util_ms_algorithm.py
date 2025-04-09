@@ -86,52 +86,6 @@ def get_image_array(path):
     
     return img_arr
 
-def colour_quantisation(arr_original):
-    arr = deepcopy(arr_original)
-    colours = [BACKGROUND, LOWER, MIDDLE, RIVET, UPPER]
-
-    # print(f"...before quantisation: {len(np.unique(arr)) = }")
-    for w in range(arr.shape[0]):
-        for h in range(arr.shape[1]):
-            max_diff = 255 * 3
-            temp_diff = 0
-            current_pixel = arr[w, h]
-            quantised_pixel = [255, 255, 255]
-            set_channel_idx = None
-            # print(current_pixel)
-            
-            # 있는지 확인
-            matching_flag = False
-            for c in colours:
-                if (current_pixel == c).all():
-                    matching_flag = True
-            if matching_flag:
-                continue       
-                    
-            for colour_idx, c in enumerate(colours):
-                # print(f"[{COLOUR_NAMES[colour_idx]}] : {c}")
-                
-                for channel_idx in range(arr.shape[2]):
-                    temp_diff += np.abs(current_pixel[channel_idx] - c[channel_idx])
-                    # print(f"{temp_diff = }")
-                
-                if temp_diff == 0:
-                    continue
-                
-                elif temp_diff < max_diff:
-                    # print(f"It's smaller!, [{colour_idx}] colour, [{COLOUR_NAMES[colour_idx]}]")
-                    max_diff = temp_diff
-                    quantised_pixel = colours[colour_idx]
-                    set_channel_idx = colour_idx
-                
-                temp_diff = 0
-                # print(f"[{max_diff = }]")
-            arr[w, h] = quantised_pixel
-            # print(f"before: {current_pixel}, after: {quantised_pixel} -> [{COLOUR_NAMES[set_channel_idx]}]")
-
-    # print(f"...after quantisation: {len(np.unique(arr)) = }")
-    return arr
-
 def get_line_coords_via_corners(img_arr, colour, is_upper_corner=True):
     condition_1 = img_arr[:, :, 0] == colour[0]
     condition_2 = img_arr[:, :, 1] == colour[1]
@@ -487,7 +441,7 @@ def get_colour_touching_coords_by_moving_on_y_axis(img_rotated_arr, x, y, colour
             is_on_colour = all(img_rotated_arr[y, x, :] == colour)
     return x, y
 
-def create_base_image(path, is_from_gen):
+def create_base_image(path):
 
     # 이미지 어레이 가져오기
     img_arr = None
@@ -498,10 +452,6 @@ def create_base_image(path, is_from_gen):
     elif isinstance(path, torch.Tensor):
         img_arr = path.numpy().transpose(1, 2, 0)
     
-    # 생성된 이미지일 경우 양자화
-    if is_from_gen:
-        img_arr = colour_quantisation(img_arr)
-
     # 이미지를 rivet 직경에 수평하게 rotate
     img_rotated_arr, (left_x_rivet, left_y_rivet, right_x_rivet, right_y_rivet) = get_rotated_image_rivet_coords(img_arr)
     return img_rotated_arr, (left_x_rivet, left_y_rivet, right_x_rivet, right_y_rivet)
@@ -654,7 +604,6 @@ def head_height_wrapper(path,
                         lower_thickness,
                         weights,
                         head_diameter,
-                        is_from_gen=False,
                         to_save_fig=False):
 
     fig_save_folder = None
@@ -664,7 +613,7 @@ def head_height_wrapper(path,
         if not fig_save_folder.exists():
             fig_save_folder.mkdir(parents=True)
     
-    img_rotated_arr, (left_x_rivet, left_y_rivet, right_x_rivet, right_y_rivet) = create_base_image(path, is_from_gen)
+    img_rotated_arr, (left_x_rivet, left_y_rivet, right_x_rivet, right_y_rivet) = create_base_image(path)
     plates, mms = select_plates_for_mm_calculation(
         upper_type,
         upper_thickness,
