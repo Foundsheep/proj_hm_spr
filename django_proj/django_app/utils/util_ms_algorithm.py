@@ -651,16 +651,21 @@ def get_minimum_thickness_at_bottom(img_rotated_arr, weighted_mm_per_pixel, fig_
             
             edge_points -= prev_added_bottom_points
     
+    lower_xs = [coords[0] for coords in list(bottom_points)]
+    lower_ys = [coords[1] for coords in list(bottom_points)]
+    
+    # if the max(x) doesn't reach almost the end of x-axis, it means broken
+    broken_margin = 10
+    if max(lower_xs) < img_rotated_cropped.shape[1] - broken_margin:
+        return -1
+
     if fig_save_folder:
         upper_xs = [coords[0] for coords in list(edge_points)]
         upper_ys = [coords[1] for coords in list(edge_points)]
         
         tmp_canvas = np.zeros_like(edges)
         tmp_canvas[upper_ys, upper_xs] = 1
-        visualise(tmp_canvas, [], [], fig_save_folder)
-        
-        lower_xs = [coords[0] for coords in list(bottom_points)]
-        lower_ys = [coords[1] for coords in list(bottom_points)]
+        visualise(tmp_canvas, [], [], fig_save_folder)        
         
         tmp_canvas = np.zeros_like(edges)
         tmp_canvas[lower_ys, lower_xs] = 1
