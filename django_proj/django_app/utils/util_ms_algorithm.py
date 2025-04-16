@@ -1,20 +1,18 @@
 import torch
 import math
 import numpy as np
-import pandas as pd
 from copy import deepcopy
 from pathlib import Path
 from PIL import Image
 from matplotlib import pyplot as plt
 import datetime
-import json
-
+import skimage
 
 BACKGROUND = [0, 0, 0]
-LOWER = [255, 96, 55]
-MIDDLE = [221, 255, 51]
-RIVET = [61, 245, 61]
-UPPER = [61, 61, 245]
+LOWER = [255, 0, 0]
+MIDDLE = [255, 255, 0]
+RIVET = [0, 255, 0]
+UPPER = [0, 0, 255]
 COLOUR_NAMES = {
     "BACKGROUND": BACKGROUND,
     "LOWER": LOWER,
@@ -366,7 +364,6 @@ def calculate_weighted_mm_per_pixel(img_rotated_arr: np.array,
     # print(f"...... {weighted_mm_per_pixel = }")
     return weighted_mm_per_pixel
 
-
 def get_middle_coords(lx, ly, rx, ry):
     middle_x = int((lx + rx) / 2)
     middle_y = int((ly + ry) / 2)
@@ -595,16 +592,113 @@ def visualise(img_rotated_arr: np.array,
     
     # print(f"...fig saved with {idx} number")
 
-def head_height_wrapper(path,
-                        upper_type,
-                        upper_thickness,
-                        middle_type,
-                        middle_thickness,
-                        lower_type,
-                        lower_thickness,
-                        weights,
-                        head_diameter,
-                        to_save_fig=False):
+def crop_image(image, ratio=0.8):
+    y_length = int(image.shape[0] * ratio)
+    x_length = int(image.shape[1] * ratio)
+
+    y_margin = int((image.shape[0] - y_length) / 2)
+    x_margin = int((image.shape[1] - x_length) / 2)
+
+    return image[y_margin:y_margin+y_length, x_margin:x_margin+x_length], x_margin, y_margin
+
+def get_edges(image, colour):
+    left_x_lower, left_y_lower, right_x_lower, right_y_lower = get_line_coords_via_corners(image, colour, False)
+    colour_extracted_grey = np.where(np.all(image == colour, axis=-1), 255, 0).astype(np.uint8)
+    edges = skimage.feature.canny(image=colour_extracted_grey)
+    return edges, left_x_lower, left_y_lower
+
+def get_distance(x1, x2, y1, y2):
+    return np.sqrt(((x1 - x2) ** 2 + (y1 - y2) ** 2))
+
+def get_minimum_thickness_at_bottom(img_rotated_arr, weighted_mm_per_pixel, fig_save_folder=None):
+    
+    # crop the center. ratio = 0.8, by default
+    img_rotated_cropped, x_margin, y_margin = crop_image(img_rotated_arr)
+    
+    # get edges    
+    colour = LOWER
+    edges, left_x_lower, left_y_lower = get_edges(img_rotated_cropped, colour)
+
+    if fig_save_folder:
+        visualise(edges, [], [], fig_save_folder)
+
+    # edge's coords
+    edge_ys, edge_xs = np.where(edges)
+    edge_points = set(zip(edge_xs, edge_ys))
+
+    # get lower line in the edges
+    boundary = 5
+    bottom_points = set()
+    prev_added_bottom_points = set()
+    prev_added_bottom_points.add((left_x_lower, left_y_lower))
+    
+    while len(prev_added_bottom_points) != 0:
+
+        # update previously added points
+        bottom_points |= prev_added_bottom_points
+
+        # temporarily store the data
+        tmp_points = deepcopy(prev_added_bottom_points)
+
+        # initialisation
+        prev_added_bottom_points = set()
+        
+        for target_x, target_y in tmp_points:
+            for sample_x, sample_y in edge_points:
+                distance = get_distance(target_x, sample_x, target_y, sample_y)
+                if distance <= boundary:
+                    prev_added_bottom_points.add((sample_x, sample_y))
+            
+            edge_points -= prev_added_bottom_points
+    
+    if fig_save_folder:
+        upper_xs = [coords[0] for coords in list(edge_points)]
+        upper_ys = [coords[1] for coords in list(edge_points)]
+        
+        tmp_canvas = np.zeros_like(edges)
+        tmp_canvas[upper_ys, upper_xs] = 1
+        visualise(tmp_canvas, [], [], fig_save_folder)
+        
+        lower_xs = [coords[0] for coords in list(bottom_points)]
+        lower_ys = [coords[1] for coords in list(bottom_points)]
+        
+        tmp_canvas = np.zeros_like(edges)
+        tmp_canvas[lower_ys, lower_xs] = 1
+        visualise(tmp_canvas, [], [], fig_save_folder)
+
+    # get the points with the minumum distance
+    pixel_min = 100_000_000
+    point_tuple = tuple()
+    for lx, ly in bottom_points:
+        for ux, uy in edge_points:
+            distance = np.sqrt(((lx - ux) ** 2 + (ly - uy) ** 2))
+            if distance < pixel_min:
+                point_tuple = (lx, ly, ux, uy)
+                pixel_min = distance
+    
+    lx_in_full = point_tuple[0] + x_margin
+    ly_in_full = point_tuple[1] + y_margin
+    ux_in_full = point_tuple[2] + x_margin
+    uy_in_full = point_tuple[3] + y_margin
+    bottom_thickness = weighted_mm_per_pixel * pixel_min
+
+    if fig_save_folder:
+        visualise(img_rotated_arr, [lx_in_full, ux_in_full], [ly_in_full, uy_in_full], fig_save_folder)
+    
+    return bottom_thickness
+
+def get_ms_metrics(
+    path,
+    upper_type,
+    upper_thickness,
+    middle_type,
+    middle_thickness,
+    lower_type,
+    lower_thickness,
+    weights,
+    head_diameter,
+    to_save_fig=False
+    ):
 
     fig_save_folder = None
     if to_save_fig:
@@ -638,4 +732,11 @@ def head_height_wrapper(path,
         weighted_mm_per_pixel,
         fig_save_folder
     )
-    return head_height
+    
+    bottom_thickness = get_minimum_thickness_at_bottom(
+        img_rotated_arr,
+        weighted_mm_per_pixel,
+        fig_save_folder
+    )
+    
+    return head_height, bottom_thickness
