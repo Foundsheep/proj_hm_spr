@@ -627,7 +627,7 @@ def get_minimum_thickness_at_bottom(img_rotated_arr, weighted_mm_per_pixel, fig_
     edge_points = set(zip(edge_xs, edge_ys))
 
     # get lower line in the edges
-    boundary = 5
+    boundary = 2
     bottom_points = set()
     prev_added_bottom_points = set()
     prev_added_bottom_points.add((left_x_lower, left_y_lower))
