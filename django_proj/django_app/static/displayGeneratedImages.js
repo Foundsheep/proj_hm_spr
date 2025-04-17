@@ -19,6 +19,11 @@ document.addEventListener("DOMContentLoaded", function () {
     submitBtn.addEventListener("click", async function () {
         const spinner = document.getElementById("loading-spinner");
         previewSentence.classList.add("d-none");
+
+        // if the button is clicked repeatedly, outputBox must be showing
+        if (!outputBox.classList.contains("d-none")) {
+            outputBox.classList.add("d-none");
+        }
         spinner.classList.remove("d-none");
         
         // Call an API
