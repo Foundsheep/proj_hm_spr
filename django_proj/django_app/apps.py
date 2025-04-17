@@ -13,7 +13,7 @@ class DjangoAppConfig(AppConfig):
 
     # --------- when invoking inside 'django_proj' folder ---------
     # load a model
-    gen_ckpt_path = "./django_app/model_ckpt/gen/epoch=2999-step=33000-train_loss=0.0020_last.ckpt"
+    gen_ckpt_path = "./django_app/model_ckpt/gen/epoch=2999-step=33000-train_loss=0.0021_last.ckpt"
     plate_dict_path = "./django_app/model_src/gen/plate_dict.json"
         
     # # --------- for debugging ---------
