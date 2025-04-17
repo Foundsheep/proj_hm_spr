@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
 from .apps import DjangoAppConfig
 from .models import *
-from .utils.util_ms_algorithm import head_height_wrapper
+from .utils.util_ms_algorithm import get_ms_metrics
 from .utils.util_seg import segment
 from .utils.util_gen import generate_image, convert_image_to_base64
 from .utils.util_index import get_plate_name_list_in_dict, get_plate_thickness_list, recommend_attaching_method
@@ -73,7 +73,7 @@ def api_process_generation(req):
             images = generate_image(req.POST)
             for img in images:
                 outputs["images"].append(convert_image_to_base64(img))
-                # outputs["ms_values"].append(head_height_wrapper(img))        
+                # outputs["ms_values"].append(get_ms_metrics(img))        
         except Exception as e:
             print(e)
             traceback.print_exc()
