@@ -478,7 +478,6 @@ def select_plates_for_mm_calculation(upper_type,
     # print(f"...selected: {plate_names = } / {mms = }")
     return plates, mms
 
-
 def get_head_height(img_rotated_arr, 
                     lx_rivet, 
                     ly_rivet, 
@@ -602,10 +601,9 @@ def crop_image(image, ratio=0.8):
     return image[y_margin:y_margin+y_length, x_margin:x_margin+x_length], x_margin, y_margin
 
 def get_edges(image, colour):
-    left_x_lower, left_y_lower, right_x_lower, right_y_lower = get_line_coords_via_corners(image, colour, False)
     colour_extracted_grey = np.where(np.all(image == colour, axis=-1), 255, 0).astype(np.uint8)
     edges = skimage.feature.canny(image=colour_extracted_grey)
-    return edges, left_x_lower, left_y_lower
+    return edges
 
 def get_distance(x1, x2, y1, y2):
     return np.sqrt(((x1 - x2) ** 2 + (y1 - y2) ** 2))
@@ -615,9 +613,11 @@ def get_minimum_thickness_at_bottom(img_rotated_arr, weighted_mm_per_pixel, fig_
     # crop the center. ratio = 0.8, by default
     img_rotated_cropped, x_margin, y_margin = crop_image(img_rotated_arr)
     
+    left_x_lower, left_y_lower, _, _ = get_line_coords_via_corners(img_rotated_cropped, LOWER, False)
+    
     # get edges    
     colour = LOWER
-    edges, left_x_lower, left_y_lower = get_edges(img_rotated_cropped, colour)
+    edges = get_edges(img_rotated_cropped, colour)
 
     if fig_save_folder:
         visualise(edges, [], [], fig_save_folder)
@@ -626,7 +626,7 @@ def get_minimum_thickness_at_bottom(img_rotated_arr, weighted_mm_per_pixel, fig_
     edge_ys, edge_xs = np.where(edges)
     edge_points = set(zip(edge_xs, edge_ys))
 
-    # get lower line in the edges
+    # get bottom line in the edges
     boundary = 2
     bottom_points = set()
     prev_added_bottom_points = set()
@@ -651,12 +651,12 @@ def get_minimum_thickness_at_bottom(img_rotated_arr, weighted_mm_per_pixel, fig_
             
             edge_points -= prev_added_bottom_points
     
-    lower_xs = [coords[0] for coords in list(bottom_points)]
-    lower_ys = [coords[1] for coords in list(bottom_points)]
+    bottom_xs = [coords[0] for coords in list(bottom_points)]
+    bottom_ys = [coords[1] for coords in list(bottom_points)]
     
     # if the max(x) doesn't reach almost the end of x-axis, it means broken
     broken_margin = 10
-    if max(lower_xs) < img_rotated_cropped.shape[1] - broken_margin:
+    if max(bottom_xs) < img_rotated_cropped.shape[1] - broken_margin:
         return -1
 
     if fig_save_folder:
@@ -668,29 +668,183 @@ def get_minimum_thickness_at_bottom(img_rotated_arr, weighted_mm_per_pixel, fig_
         visualise(tmp_canvas, [], [], fig_save_folder)        
         
         tmp_canvas = np.zeros_like(edges)
-        tmp_canvas[lower_ys, lower_xs] = 1
+        tmp_canvas[bottom_ys, bottom_xs] = 1
         visualise(tmp_canvas, [], [], fig_save_folder)
 
     # get the points with the minumum distance
-    pixel_min = 100_000_000
+    pixel_distance_min = 100_000
     point_tuple = tuple()
     for lx, ly in bottom_points:
         for ux, uy in edge_points:
             distance = np.sqrt(((lx - ux) ** 2 + (ly - uy) ** 2))
-            if distance < pixel_min:
+            if distance < pixel_distance_min:
                 point_tuple = (lx, ly, ux, uy)
-                pixel_min = distance
+                pixel_distance_min = distance
     
+    # get the coords in the original image
     lx_in_full = point_tuple[0] + x_margin
     ly_in_full = point_tuple[1] + y_margin
     ux_in_full = point_tuple[2] + x_margin
     uy_in_full = point_tuple[3] + y_margin
-    bottom_thickness = weighted_mm_per_pixel * pixel_min
+    bottom_thickness = weighted_mm_per_pixel * pixel_distance_min
 
     if fig_save_folder:
         visualise(img_rotated_arr, [lx_in_full, ux_in_full], [ly_in_full, uy_in_full], fig_save_folder)
     
     return bottom_thickness
+
+def get_interlock(img_rotated_arr, weighted_mm_per_pixel, fig_save_folder=None):
+    # crop the center. ratio = 0.8, by default
+    img_cropped, x_margin, y_margin = crop_image(img_rotated_arr)
+
+    # get rivet edges    
+    colour = RIVET
+    rivet_edges = get_edges(img_cropped, colour)
+
+    # get corners of rivet close to the bottom
+    left_x_rivet, left_y_rivet, right_x_rivet, right_y_rivet = get_line_coords_via_corners(img_cropped, colour, False)
+    
+    if fig_save_folder:
+        visualise(rivet_edges, [left_x_rivet, right_x_rivet], [left_y_rivet, right_y_rivet], fig_save_folder)
+    
+    # rivet edge's coords
+    rivet_edge_ys, rivet_edge_xs = np.where(rivet_edges)
+
+    # get the centre of rivet
+    x_length = rivet_edge_xs.max() - rivet_edge_xs.min()
+    y_length = rivet_edge_ys.max() - rivet_edge_ys.min()
+    x_centre = rivet_edge_xs.min() + x_length // 2
+    y_centre = rivet_edge_ys.min() + y_length // 2
+
+    if fig_save_folder:
+        visualise(rivet_edges, [x_centre], [y_centre], fig_save_folder)
+
+    # # get lower quadrants
+    # quadrant_3 = edges[y_centre:, :x_centre]
+    # quadrant_4 = edges[y_centre:, x_centre:]
+    # plt.imshow(quadrant_3)
+    # plt.show()
+
+    # plt.imshow(quadrant_4)
+    # plt.show()
+
+    # get lower quadrants
+    quadrant_3_cond = (rivet_edge_xs < x_centre) & (rivet_edge_ys > y_centre)
+    quadrant_4_cond = (rivet_edge_xs > x_centre) & (rivet_edge_ys > y_centre)
+
+    # get the furthest point in the quadrant 3
+    quadrant_3_x_far = rivet_edge_xs[quadrant_3_cond].min()
+    quadrant_3_min_mask = rivet_edge_xs[quadrant_3_cond] == quadrant_3_x_far
+    quadrant_3_y_far = rivet_edge_ys[quadrant_3_cond][quadrant_3_min_mask].max()
+
+    if fig_save_folder:
+        visualise(rivet_edges, [quadrant_3_x_far], [quadrant_3_y_far], fig_save_folder)
+
+    # get the furthest point in the quadrant 4
+    quadrant_4_x_far = rivet_edge_xs[quadrant_4_cond].max()
+    quadrant_4_max_mask = rivet_edge_xs[quadrant_4_cond] == quadrant_4_x_far
+    quadrant_4_y_far = rivet_edge_ys[quadrant_4_cond][quadrant_4_max_mask].max()
+
+    if fig_save_folder:
+        visualise(rivet_edges, [quadrant_4_x_far], [quadrant_4_y_far], fig_save_folder)
+        visualise(
+            img_rotated_arr, 
+            [quadrant_3_x_far+x_margin, quadrant_4_x_far+x_margin], 
+            [quadrant_3_y_far+y_margin, quadrant_4_y_far+y_margin], 
+            fig_save_folder
+        )
+    
+    # get lower plate edges    
+    colour = LOWER
+    lower_edges = get_edges(img_cropped, colour)
+
+    # lower plate edge's coords
+    lower_edge_ys, lower_edge_xs = np.where(lower_edges)
+
+    # get corners of lower plate close to the top
+    left_x_lower, left_y_lower, right_x_lower, right_y_lower = get_line_coords_via_corners(img_cropped, colour, True)
+
+    # get the most distant points from the corners
+    # by finding the closest, but the most distant point gradually
+    boundary = 2
+    far_lower_points = []
+
+    # get the points twice from the left and the right
+    for standard_x, standard_y in zip([left_x_lower, right_x_lower], [left_y_lower, right_y_lower]):
+        # lower plate edge's coords
+        edge_points = set(zip(lower_edge_xs, lower_edge_ys))
+
+        just_added_points = set()
+        just_added_points.add((standard_x, standard_y))
+        max_distance = -1
+        point_x = None
+        point_y = None
+        
+        # if any newly found points
+        while just_added_points:
+            
+            # get the furthest from the newly found points
+            for sample_x, sample_y in just_added_points:
+                distance = get_distance(standard_x, sample_x, standard_y, sample_y)
+                if distance > max_distance:
+                    point_x = sample_x
+                    point_y = sample_y
+                    max_distance = distance
+
+            # initialisation before adding
+            just_added_points = set()
+
+            # get the points within the boundary
+            for edge_x, edge_y in edge_points:
+                distance = get_distance(edge_x, point_x, edge_y, point_y)
+                if distance <= boundary:
+                    just_added_points.add((edge_x, edge_y))
+            
+            # remove detected points from the original set
+            edge_points -= just_added_points
+
+        far_lower_points.extend([point_x, point_y])
+    
+    left_lower_far_x = far_lower_points[0]
+    left_lower_far_y = far_lower_points[1]
+    right_lower_far_x = far_lower_points[2]
+    right_lower_far_y = far_lower_points[3]
+    
+    if fig_save_folder:
+        visualise(lower_edges, [], [], fig_save_folder)
+        visualise(img_cropped, [left_lower_far_x], [left_lower_far_y], fig_save_folder)
+        visualise(img_cropped, [right_lower_far_x], [right_lower_far_y], fig_save_folder)
+        visualise(
+            img_rotated_arr,
+            [left_lower_far_x+x_margin, right_lower_far_x+x_margin],
+            [left_lower_far_y+y_margin, right_lower_far_y+y_margin],
+            fig_save_folder
+        )
+        visualise(
+            img_rotated_arr,
+            [quadrant_3_x_far+x_margin, quadrant_4_x_far+x_margin], 
+            [quadrant_3_y_far+y_margin, quadrant_4_y_far+y_margin],
+            fig_save_folder
+        )
+        visualise(
+            img_rotated_arr,
+            [left_lower_far_x+x_margin, right_lower_far_x+x_margin], 
+            [left_lower_far_y+y_margin, right_lower_far_y+y_margin],
+            fig_save_folder
+        )
+
+    # if interlock didn't occur, give it -1    
+    left_interlock = (
+        (left_lower_far_x - quadrant_3_x_far) * weighted_mm_per_pixel 
+        if left_lower_far_x > quadrant_3_x_far 
+        else -1
+    )
+    right_interlock = (
+        (quadrant_4_x_far - right_lower_far_x) * weighted_mm_per_pixel 
+        if quadrant_4_x_far > right_lower_far_x 
+        else -1
+    )
+    return left_interlock, right_interlock
 
 def get_ms_metrics(
     path,
@@ -744,4 +898,10 @@ def get_ms_metrics(
         fig_save_folder
     )
     
-    return head_height, bottom_thickness
+    left_interlock, right_interlock = get_interlock(
+        img_rotated_arr,
+        weighted_mm_per_pixel,
+        fig_save_folder
+    )
+    
+    return head_height, bottom_thickness, left_interlock, right_interlock
